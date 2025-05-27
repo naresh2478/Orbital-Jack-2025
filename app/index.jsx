@@ -7,7 +7,7 @@ const Home = () => {
 
       <Text style = {styles.title}>Home</Text>
 
-      <Text style = {{ marginTop: 10, marginBottom: 30}}>
+      <Text style = {{ marginTop: 20, marginBottom: 30}}>
         Goat
       </Text>
       
