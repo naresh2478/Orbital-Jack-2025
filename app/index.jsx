@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Logo from '../assets/ElevateYouLogo.png'; // update path if needed
@@ -32,52 +34,61 @@ const Home = () => {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.container} style={{ flex: 1 }}>
-        <Image source={Logo} style={styles.logo} />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0} // tweak offset as needed
+      >
+        <ScrollView contentContainerStyle={styles.container} style={{ flex: 1 }}>
+          <Image source={Logo} style={styles.logo} />
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Today’s Tasks</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Today’s Tasks</Text>
 
-          {tasks.length === 0 && (
-            <Text style={styles.noTasks}>
-              No habits yet. Add one below!
-            </Text>
-          )}
-
-          {tasks.map((task) => (
-            <TouchableOpacity
-              key={task}
-              style={[
-                styles.taskButton,
-                completed[task] && styles.taskButtonCompleted,
-              ]}
-              onPress={() => toggleTask(task)}
-            >
-              <Text style={styles.taskText}>
-                {completed[task] ? `✅ ${task}` : task}
+            {tasks.length === 0 && (
+              <Text style={styles.noTasks}>
+                No habits yet. Add one below!
               </Text>
-            </TouchableOpacity>
-          ))}
+            )}
 
-          {adding ? (
-            <View style={styles.addSection}>
-              <TextInput
-                placeholder="Enter new habit..."
-                style={styles.input}
-                value={newTask}
-                onChangeText={setNewTask}
-              />
-              <TouchableOpacity onPress={handleAddTask} style={styles.confirmBtn}>
-                <Text style={{ color: '#fff' }}>Add</Text>
+            {tasks.map((task) => (
+              <TouchableOpacity
+                key={task}
+                style={[
+                  styles.taskButton,
+                  completed[task] && styles.taskButtonCompleted,
+                ]}
+                onPress={() => toggleTask(task)}
+              >
+                <Text style={styles.taskText}>
+                  {completed[task] ? `✅ ${task}` : task}
+                </Text>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <Text style={styles.addNew} onPress={() => setAdding(true)}>
-              + Add new habit
-            </Text>
-          )}
-        </View>
-      </ScrollView>
+            ))}
+
+            {adding ? (
+              <View style={styles.addSection}>
+                <TextInput
+                  placeholder="Enter new habit..."
+                  style={styles.input}
+                  value={newTask}
+                  onChangeText={setNewTask}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleAddTask}
+                />
+                <TouchableOpacity onPress={handleAddTask} style={styles.confirmBtn}>
+                  <Text style={{ color: '#fff' }}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={styles.addNew} onPress={() => setAdding(true)}>
+                + Add new habit
+              </Text>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
