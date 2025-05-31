@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useInsertionEffect, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Logo from '../assets/ElevateYouLogo.png'; // update path if needed
+import {
+  getTasks,
+  addTask,
+  toggleTaskCompletion,
+} from '../utils/streakstorage.js'; 
 
 const Home = () => {
   const [tasks, setTasks] = useState([]);
@@ -19,17 +24,58 @@ const Home = () => {
   const [adding, setAdding] = useState(false);
   const [newTask, setNewTask] = useState('');
 
-  const toggleTask = (task) => {
-    setCompleted({ ...completed, [task]: !completed[task] });
-  };
+  useEffect(() => {
+    const loadTasks = async () => {
+      const storedTasks = await getTasks();
+  
+      // Extract task names for your homepage's tasks state
+      setTasks(storedTasks.map(t => t.name));
+  
+      // Build completed object: task completed if lastCompleted is today
+      const today = new Date().toISOString().slice(0, 10);
+      const completedObj = {};
+      storedTasks.forEach(task => {
+        completedObj[task.name] = task.lastCompleted === today;
+      });
+      setCompleted(completedObj);
+    };
+  
+    loadTasks();
+  }, []);
+  
 
-  const handleAddTask = () => {
+  const toggleTask = async (taskName) => {
+    // Update UI
+    const newCompleted = { ...completed, [taskName]: !completed[taskName] };
+  setCompleted(newCompleted);
+
+  // AsyncStorage update
+  await toggleTaskCompletion(taskName);
+  
+    // Don't reset `tasks`, or else you wipe the UI too aggressively
+  };
+  
+
+  const handleAddTask = async () => {
     if (newTask.trim() !== '' && !tasks.includes(newTask)) {
+      // Add task locally first for fast UI update
       setTasks([...tasks, newTask]);
       setCompleted({ ...completed, [newTask]: false });
       setNewTask('');
       setAdding(false);
-    }
+  
+      // Add task in AsyncStorage via streakstorage
+      await addTask(newTask);
+  
+      // Optionally reload from AsyncStorage after adding
+      const storedTasks = await getTasks();
+      const today = new Date().toISOString().slice(0, 10);
+      const completedMap = {};
+      storedTasks.forEach((t) => {
+          completedMap[t.name] = t.lastCompleted === today;
+        });
+        setCompleted(completedMap); 
+      }
   };
 
   return (
