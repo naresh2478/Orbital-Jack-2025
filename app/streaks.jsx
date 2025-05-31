@@ -4,10 +4,33 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTasks } from '../utils/streakstorage.js';
 
+const TOTAL_DAYS = 21;
+
+//StreakCard component
+const StreakCard = ({ name, streak }) => {
+  const progress = (streak / TOTAL_DAYS) * 100;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.streak}>Streak: {streak} days</Text>
+      </View>
+      <View style={styles.progressBar}>
+        <View style={[styles.progress, { width: `${progress}%` }]} />
+      </View>
+      <Text style={styles.counter}>{streak}/{TOTAL_DAYS}</Text>
+    </View>
+  );
+};
+
 
 const Streaks = () => {
   const [streaks, setStreaks] = useState([]);
 
+  //useFocusEffect is used to fetch streaks when the screen is focused (reloaded)
+  //calls getTasks to load full task array
+  //fetch streaks state
   useFocusEffect(
     useCallback(() => {
       const fetchStreaks = async () => {
@@ -24,50 +47,64 @@ const Streaks = () => {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0} // tweak offset as needed
-          >
-
-    <View style={{ padding: 20 }}>
-      {streaks.length === 0 ? (
-  <Text>No streaks to show</Text>
-) : (streaks.map((task) => (
-        <Text key={task.name}>
-          {task.name}: 🔥 {task.streak} day{task.streak !== 1 ? 's' : ''}
-        </Text>)
-      ))}
-    </View>
-
-          
-          {/* <View style={styles.card}>
-              <Text>streaks</Text>
-          </View>
-
-          <View style={styles.card}>
-              <Text>penis</Text>
-          </View>  */}
-
-
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  )
+      <ScrollView contentContainerStyle={styles.container}>
+        {streaks.map((task) => (
+          <StreakCard key={task.name} name={task.name} streak={task.streak|| 0} />
+        ))}
+      </ScrollView>
+      </SafeAreaView>
+    );
+    
+  
 }
 
 
 
 const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    alignItems: 'center',
+  },
   card: {
+    width: '90%',
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 10,
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
-})
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  streak: {
+    fontSize: 16,
+    color: '#555',
+  },
+  progressBar: {
+    height: 10,
+    backgroundColor: '#ccc',
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  progress: {
+    height: '100%',
+    backgroundColor: '#526FFF',
+    borderRadius: 5,
+  },
+  counter: {
+    textAlign: 'right',
+    marginTop: 4,
+    color: '#555',
+  },
+});
 
 export default Streaks;

@@ -9,6 +9,9 @@ const TASKS_KEY = 'tasks';
  * Get all tasks with their streak data from AsyncStorage backend
  *  
  */
+
+//getTasks reads the saved tasks array from AsyncStorage (under key "tasks")
+//returns the array or empty array
 export const getTasks = async () => {
   try {
     const jsonValue = await AsyncStorage.getItem(TASKS_KEY);
@@ -31,9 +34,9 @@ export const saveTasks = async (tasks) => {
   }
 };
 
-/**
- * Add a new task
- */
+//reads current tasks from AsyncStorage, checks if taskName already exists
+//if taskName does not exist, set streak = 0
+//save update list
 export const addTask = async (taskName) => {
   const tasks = await getTasks();
   if (tasks.find((t) => t.name === taskName)) return;
@@ -47,23 +50,35 @@ export const addTask = async (taskName) => {
   await saveTasks(tasks);
 };
 
-/**
- * Toggle completion and update streak
- */
+//reads tasks and updates lastCompleted and streaks fields
+//if last completed yesterday, increment streak
+//else, reset streak to 1
+//saves updated tasks back to AsyncStorage
 export const toggleTaskCompletion = async (taskName) => {
   const tasks = await getTasks();
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const updatedTasks = tasks.map((task) => {
     if (task.name === taskName) {
-      if (task.lastCompleted === today) {
-        // Already completed today → unmark
-        return {
-          ...task,
-          lastCompleted: null,
-          streak: Math.max(task.streak - 1, 0),
-        };
-      }
+        if (task.lastCompleted === today) {
+            // Already completed today → unmark
+          
+            const updatedStreak = Math.max(task.streak - 1, 0);
+           //when unchecking from today, Last completed should be set to yesterday
+           //not reset to 0
+            let newLastCompleted = null;
+            if (updatedStreak > 0) {
+              const previousDate = new Date();
+              previousDate.setDate(previousDate.getDate() - updatedStreak);
+              newLastCompleted = format(previousDate, 'yyyy-MM-dd');
+            }
+          
+            return {
+              ...task,
+              lastCompleted: newLastCompleted,
+              streak: updatedStreak,
+            };
+          }
 
       const yesterday = format(
         new Date(new Date().setDate(new Date().getDate() - 1)),
@@ -82,12 +97,11 @@ export const toggleTaskCompletion = async (taskName) => {
     return task;
   });
 
-  await saveTasks(updatedTasks);
+  await saveTasks(updatedTasks); //writes back to AsyncStorage
 };
 
-/**
- * Get current streak count for a specific task
- */
+//reads all tasks from AsyncStorage and finds the task with the given name
+//returns the streak of that task, or 0 if not found
 export const getStreak = async (taskName) => {
   const tasks = await getTasks();
   const task = tasks.find((t) => t.name === taskName);
