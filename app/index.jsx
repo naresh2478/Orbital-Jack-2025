@@ -1,4 +1,4 @@
-import React, { useState, useInsertionEffect, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,12 +11,14 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Logo from '../assets/ElevateYouLogo.png'; // update path if needed
+import Logo from '../assets/ElevateYouLogo.png';
 import {
   getTasks,
   addTask,
   toggleTaskCompletion,
-} from '../utils/streakstorage.js'; 
+  deleteTask,
+} from '../utils/streakstorage';
+import { format } from 'date-fns';
 
 const Home = () => {
   const [tasks, setTasks] = useState([]);
@@ -26,64 +28,57 @@ const Home = () => {
 
   useEffect(() => {
     const loadTasks = async () => {
-      const storedTasks = await getTasks();
-  
-      // Extract task names for your homepage's tasks state
-      setTasks(storedTasks.map(t => t.name));
-  
-      // Build completed object: task completed if lastCompleted is today
-      const today = new Date().toISOString().slice(0, 10);
-      const completedObj = {};
-      storedTasks.forEach(task => {
-        completedObj[task.name] = task.lastCompleted === today;
+      const stored = await getTasks();
+      setTasks(stored);
+
+      // Determine which tasks were completed today
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const completedMap = {};
+      stored.forEach(task => {
+        completedMap[task.name] = task.lastCompleted === today;
       });
-      setCompleted(completedObj);
+      setCompleted(completedMap);
     };
-  
+
     loadTasks();
   }, []);
-  
 
   const toggleTask = async (taskName) => {
-    // Update UI
-    const newCompleted = { ...completed, [taskName]: !completed[taskName] };
-  setCompleted(newCompleted);
+    const updated = !completed[taskName];
+    setCompleted({ ...completed, [taskName]: updated });
+    await toggleTaskCompletion(taskName);
 
-  // AsyncStorage update
-  await toggleTaskCompletion(taskName);
-  
-    // Don't reset `tasks`, or else you wipe the UI too aggressively
+    const updatedTasks = await getTasks();
+    setTasks(updatedTasks);
   };
-  
+
+  const handleDelete = async (taskName) => {
+    await deleteTask(taskName);
+    const updatedTasks = tasks.filter((t) => t.name !== taskName);
+    setTasks(updatedTasks);
+    const updatedCompleted = { ...completed };
+    delete updatedCompleted[taskName];
+    setCompleted(updatedCompleted);
+  };
 
   const handleAddTask = async () => {
-    if (newTask.trim() !== '' && !tasks.includes(newTask)) {
-      // Add task locally first for fast UI update
-      setTasks([...tasks, newTask]);
+    if (newTask.trim() !== '' && !tasks.find(t => t.name === newTask)) {
+      await addTask(newTask);
+      const updatedTasks = await getTasks();
+      setTasks(updatedTasks);
       setCompleted({ ...completed, [newTask]: false });
       setNewTask('');
       setAdding(false);
-  
-      // Add task in AsyncStorage via streakstorage
-      await addTask(newTask);
-  
-      // Optionally reload from AsyncStorage after adding
-      const storedTasks = await getTasks();
-      const today = new Date().toISOString().slice(0, 10);
-      const completedMap = {};
-      storedTasks.forEach((t) => {
-          completedMap[t.name] = t.lastCompleted === today;
-        });
-        setCompleted(completedMap); 
-      }
+    }
   };
+
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0} // tweak offset as needed
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <ScrollView contentContainerStyle={styles.container} style={{ flex: 1 }}>
           <Image source={Logo} style={styles.logo} />
@@ -92,24 +87,30 @@ const Home = () => {
             <Text style={styles.cardTitle}>Today’s Tasks</Text>
 
             {tasks.length === 0 && (
-              <Text style={styles.noTasks}>
-                No habits yet. Add one below!
-              </Text>
+              <Text style={styles.noTasks}>No habits yet. Add one below!</Text>
             )}
 
             {tasks.map((task) => (
-              <TouchableOpacity
-                key={task}
+              <View
+                key={task.name}
                 style={[
-                  styles.taskButton,
-                  completed[task] && styles.taskButtonCompleted,
+                  styles.taskRow,
+                  completed[task.name] && styles.taskRowCompleted
                 ]}
-                onPress={() => toggleTask(task)}
               >
-                <Text style={styles.taskText}>
-                  {completed[task] ? `✅ ${task}` : task}
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.taskButton}
+                  onPress={() => toggleTask(task.name)}
+                >
+                  <Text style={styles.taskText}>
+                    {completed[task.name] ? `✅ ${task.name}` : task.name}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => handleDelete(task.name)}>
+                  <Text style={styles.deleteIcon}>🗑</Text>
+                </TouchableOpacity>
+              </View>
             ))}
 
             {adding ? (
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   card: {
-    width: 320,
+    width: '90%',
     padding: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -163,6 +164,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 5,
+    alignSelf: 'center',
   },
   cardTitle: {
     fontWeight: 'bold',
@@ -175,18 +177,30 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: '#888',
   },
-  taskButton: {
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    width: '100%',
     backgroundColor: '#EEE',
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 10,
+    justifyContent: 'space-between',
   },
-  taskButtonCompleted: {
+  taskRowCompleted: {
     backgroundColor: '#B4F8C8',
+  },
+  taskButton: {
+    flex: 1,
   },
   taskText: {
     fontSize: 16,
+  },
+  deleteIcon: {
+    marginLeft: 12,
+    fontSize: 20,
+    color: 'gray',
   },
   addNew: {
     color: '#007AFF',

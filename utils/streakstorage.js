@@ -108,6 +108,12 @@ export const getStreak = async (taskName) => {
   return task ? task.streak : 0;
 };
 
+export const deleteTask = async (taskName) => {
+  const tasks = await getTasks();
+  const updated = tasks.filter((t) => t.name !== taskName);
+  await saveTasks(updated);
+};
+
 
 
 
