@@ -1,12 +1,11 @@
-import { ScrollView, StyleSheet, Text, View, KeyboardAvoidingView, Platform } from 'react-native';
-import React, { useEffect, useState, useCallback} from 'react';
+import React, { useCallback, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { getTasks } from '../../utils/streakstorage';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getTasks } from '../utils/streakstorage.js';
 
 const TOTAL_DAYS = 21;
 
-//StreakCard component
 const StreakCard = ({ name, streak }) => {
   const progress = (streak / TOTAL_DAYS) * 100;
 
@@ -24,7 +23,6 @@ const StreakCard = ({ name, streak }) => {
   );
 };
 
-
 const Streaks = () => {
   const [streaks, setStreaks] = useState([]);
 
@@ -37,28 +35,22 @@ const Streaks = () => {
         const allTasks = await getTasks();
         setStreaks(allTasks);
       };
-  
       fetchStreaks();
-  
-      // Optionally: return a cleanup function if needed
-      return () => {};
-    }, []) 
+    }, [])
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {streaks.map((task) => (
-          <StreakCard key={task.name} name={task.name} streak={task.streak|| 0} />
-        ))}
-      </ScrollView>
-      </SafeAreaView>
-    );
-    
-  
-}
+     <SafeAreaView style={{ flex: 1 }}>
+    <ScrollView contentContainerStyle={styles.container}>
+      {streaks.map((task) => (
+        <StreakCard key={task.name} name={task.name} streak={task.streak} />
+      ))}
+    </ScrollView>
+    </SafeAreaView>
+  );
+};
 
-
+export default Streaks;
 
 const styles = StyleSheet.create({
   container: {
@@ -106,5 +98,3 @@ const styles = StyleSheet.create({
     color: '#555',
   },
 });
-
-export default Streaks;

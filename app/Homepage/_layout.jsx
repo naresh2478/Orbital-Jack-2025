@@ -1,7 +1,7 @@
 import  { Tabs } from "expo-router";
 import { Image} from "react-native";
-import homeIcon from "../assets/HomepageIcon.png";
-import streaksIcon from "../assets/StreaksIcon.png";
+import homeIcon from "../../assets/HomepageIcon.png";
+import streaksIcon from "../../assets/StreaksIcon.png";
 
 const _layout = () => {
   return (
@@ -13,7 +13,7 @@ const _layout = () => {
         }}
     > 
         <Tabs.Screen //edit tab screen
-            name="index"
+            name="main"
             options={{ 
                 title: "Home",
                 tabBarIcon: ({ color }) => (
