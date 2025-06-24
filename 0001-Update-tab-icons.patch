@@ -1,0 +1,53 @@
+From e321b649e4df813bfe52c8bb106f90ebba4bccfe Mon Sep 17 00:00:00 2001
+From: brendaan07 <brendaaaan07@gmail.com>
+Date: Sat, 31 May 2025 16:14:51 +0800
+Subject: [PATCH 1/8] Update tab icons
+
+---
+ app/_layout.jsx | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/app/_layout.jsx b/app/_layout.jsx
+index 851aaca9..5bd49b86 100644
+--- a/app/_layout.jsx
++++ b/app/_layout.jsx
+@@ -1,11 +1,12 @@
+ import  { Tabs } from "expo-router";
+ import { Image} from "react-native";
+-import homeIcon from "../assets/aaron.png";
++import homeIcon from "../assets/HomepageIcon.png";
++import streaksIcon from "../assets/StreaksIcon.png";
+ 
+ const _layout = () => {
+   return (
+-    <Tabs> 
+-        <Tabs.Screen
++    <Tabs> //creates tab navigation 
++        <Tabs.Screen //edit tab screen
+             name="index"
+             options={{ 
+                 title: "Home",
+@@ -16,7 +17,12 @@ const _layout = () => {
+         />
+         <Tabs.Screen
+             name="streaks"
+-            options={{ title: "Streaks" }}
++            options={{ 
++                title: "Streaks",
++                tabBarIcon: () => (
++                    <Image source={streaksIcon} style={{ width: 24, height: 24 }} />
++                )
++            }}
+         />
+     </Tabs>
+ 
+@@ -26,3 +32,6 @@ const _layout = () => {
+ 
+ export default _layout
+ 
++
++
++
+-- 
+2.47.1.windows.1
+

@@ -1,0 +1,643 @@
+From 1f587afa4dfca72c87d07a4f65d1a3266c366446 Mon Sep 17 00:00:00 2001
+From: brendaan07 <brendaaaan07@gmail.com>
+Date: Wed, 11 Jun 2025 16:10:31 +0800
+Subject: [PATCH 6/8] login page and router
+
+---
+ app/{ => Homepage}/_layout.jsx |   6 +-
+ app/Homepage/main.jsx          | 231 +++++++++++++++++++++++++++++
+ app/{ => Homepage}/streaks.jsx |  40 ++---
+ app/index.jsx                  | 257 ++++++---------------------------
+ 4 files changed, 291 insertions(+), 243 deletions(-)
+ rename app/{ => Homepage}/_layout.jsx (87%)
+ create mode 100644 app/Homepage/main.jsx
+ rename app/{ => Homepage}/streaks.jsx (74%)
+
+diff --git a/app/_layout.jsx b/app/Homepage/_layout.jsx
+similarity index 87%
+rename from app/_layout.jsx
+rename to app/Homepage/_layout.jsx
+index 7c420ec3..646b4570 100644
+--- a/app/_layout.jsx
++++ b/app/Homepage/_layout.jsx
+@@ -1,7 +1,7 @@
+ import  { Tabs } from "expo-router";
+ import { Image} from "react-native";
+-import homeIcon from "../assets/HomepageIcon.png";
+-import streaksIcon from "../assets/StreaksIcon.png";
++import homeIcon from "../../assets/HomepageIcon.png";
++import streaksIcon from "../../assets/StreaksIcon.png";
+ 
+ const _layout = () => {
+   return (
+@@ -13,7 +13,7 @@ const _layout = () => {
+         }}
+     > 
+         <Tabs.Screen //edit tab screen
+-            name="index"
++            name="main"
+             options={{ 
+                 title: "Home",
+                 tabBarIcon: ({ color }) => (
+diff --git a/app/Homepage/main.jsx b/app/Homepage/main.jsx
+new file mode 100644
+index 00000000..ea3c88f9
+--- /dev/null
++++ b/app/Homepage/main.jsx
+@@ -0,0 +1,231 @@
++import React, { useState, useEffect } from 'react';
++import {
++  StyleSheet,
++  Text,
++  View,
++  Image,
++  TouchableOpacity,
++  ScrollView,
++  TextInput,
++  KeyboardAvoidingView,
++  Platform,
++} from 'react-native';
++import { SafeAreaView } from 'react-native-safe-area-context';
++import Logo from '../../assets/ElevateYouLogo.png';
++import {
++  getTasks,
++  addTask,
++  toggleTaskCompletion,
++  deleteTask,
++} from '../../utils/streakstorage';
++import { format } from 'date-fns';
++
++const Home = () => {
++  const [tasks, setTasks] = useState([]);
++  const [completed, setCompleted] = useState({});
++  const [adding, setAdding] = useState(false);
++  const [newTask, setNewTask] = useState('');
++
++  useEffect(() => {
++    const loadTasks = async () => {
++      const stored = await getTasks();
++      setTasks(stored);
++
++      // Determine which tasks were completed today
++      const today = format(new Date(), 'yyyy-MM-dd');
++      const completedMap = {};
++      stored.forEach(task => {
++        completedMap[task.name] = task.lastCompleted === today;
++      });
++      setCompleted(completedMap);
++    };
++
++    loadTasks();
++  }, []);
++
++  const toggleTask = async (taskName) => {
++    const updated = !completed[taskName];
++    setCompleted({ ...completed, [taskName]: updated });
++    await toggleTaskCompletion(taskName);
++
++    const updatedTasks = await getTasks();
++    setTasks(updatedTasks);
++  };
++
++  const handleDelete = async (taskName) => {
++    await deleteTask(taskName);
++    const updatedTasks = tasks.filter((t) => t.name !== taskName);
++    setTasks(updatedTasks);
++    const updatedCompleted = { ...completed };
++    delete updatedCompleted[taskName];
++    setCompleted(updatedCompleted);
++  };
++
++  const handleAddTask = async () => {
++    if (newTask.trim() !== '' && !tasks.find(t => t.name === newTask)) {
++      await addTask(newTask);
++      const updatedTasks = await getTasks();
++      setTasks(updatedTasks);
++      setCompleted({ ...completed, [newTask]: false });
++      setNewTask('');
++      setAdding(false);
++    }
++  };
++
++  return (
++     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
++        <KeyboardAvoidingView
++            style={{ flex: 1 }}
++            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
++            keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
++      >
++    <ScrollView contentContainerStyle={styles.container}>
++          <Image source={Logo} style={styles.logo} />
++
++          <View style={styles.card}>
++            <Text style={styles.cardTitle}>Today’s Habits</Text>
++
++            {tasks.length === 0 && (
++              <Text style={styles.noTasks}>No habits yet. Add one below!</Text>
++            )}
++
++            {tasks.map((task) => (
++              <View
++                key={task.name}
++                style={[
++                  styles.taskRow,
++                  completed[task.name] && styles.taskRowCompleted
++                ]}
++              >
++                <TouchableOpacity
++                  style={styles.taskButton}
++                  onPress={() => toggleTask(task.name)}
++                >
++                  <Text style={styles.taskText}>
++                    {completed[task.name] ? `✅ ${task.name}` : task.name}
++                  </Text>
++                </TouchableOpacity>
++
++                <TouchableOpacity onPress={() => handleDelete(task.name)}>
++                  <Text style={styles.deleteIcon}>🗑</Text>
++                </TouchableOpacity>
++              </View>
++            ))}
++
++            {adding ? (
++              <View style={styles.addSection}>
++                <TextInput
++                  placeholder="Enter new habit..."
++                  style={styles.input}
++                  value={newTask}
++                  onChangeText={setNewTask}
++                  autoFocus
++                  returnKeyType="done"
++                  onSubmitEditing={handleAddTask}
++                />
++                <TouchableOpacity onPress={handleAddTask} style={styles.confirmBtn}>
++                  <Text style={{ color: '#fff' }}>Add</Text>
++                </TouchableOpacity>
++              </View>
++            ) : (
++              <Text style={styles.addNew} onPress={() => setAdding(true)}>
++                + Add new habit
++              </Text>
++            )}
++          </View>
++        </ScrollView>
++       </KeyboardAvoidingView>
++     </SafeAreaView>
++  );
++};
++
++const styles = StyleSheet.create({
++  container: {
++    flexGrow: 1,
++    justifyContent: 'center',
++    alignItems: 'center',
++    paddingVertical: 40,
++    backgroundColor: '#F5F5F5',
++  },
++  logo: {
++    width: 150,
++    height: 150,
++    marginBottom: 20,
++    resizeMode: 'contain',
++  },
++  card: {
++    width: '90%',
++    padding: 20,
++    backgroundColor: '#FFFFFF',
++    borderRadius: 20,
++    shadowColor: '#000',
++    shadowOpacity: 0.1,
++    shadowOffset: { width: 0, height: 4 },
++    shadowRadius: 8,
++    elevation: 5,
++    alignSelf: 'center',
++  },
++  cardTitle: {
++    fontWeight: 'bold',
++    fontSize: 20,
++    marginBottom: 16,
++    textAlign: 'center',
++  },
++  noTasks: {
++    textAlign: 'center',
++    marginBottom: 10,
++    color: '#888',
++  },
++  taskRow: {
++    flexDirection: 'row',
++    alignItems: 'center',
++    marginBottom: 10,
++    width: '100%',
++    backgroundColor: '#EEE',
++    borderRadius: 12,
++    paddingVertical: 12,
++    paddingHorizontal: 16,
++    justifyContent: 'space-between',
++  },
++  taskRowCompleted: {
++    backgroundColor: '#B4F8C8',
++  },
++  taskButton: {
++    flex: 1,
++  },
++  taskText: {
++    fontSize: 16,
++  },
++  deleteIcon: {
++    marginLeft: 12,
++    fontSize: 20,
++    color: 'gray',
++  },
++  addNew: {
++    color: '#007AFF',
++    textAlign: 'center',
++    marginTop: 10,
++    fontWeight: '500',
++  },
++  addSection: {
++    marginTop: 10,
++    flexDirection: 'row',
++    alignItems: 'center',
++  },
++  input: {
++    flex: 1,
++    backgroundColor: '#F0F0F0',
++    paddingVertical: 8,
++    paddingHorizontal: 12,
++    borderRadius: 10,
++    marginRight: 10,
++  },
++  confirmBtn: {
++    backgroundColor: '#007AFF',
++    paddingVertical: 8,
++    paddingHorizontal: 14,
++    borderRadius: 10,
++  },
++});
++
++export default Home;
+diff --git a/app/streaks.jsx b/app/Homepage/streaks.jsx
+similarity index 74%
+rename from app/streaks.jsx
+rename to app/Homepage/streaks.jsx
+index def8923e..563d9450 100644
+--- a/app/streaks.jsx
++++ b/app/Homepage/streaks.jsx
+@@ -1,12 +1,11 @@
+-import { ScrollView, StyleSheet, Text, View, KeyboardAvoidingView, Platform } from 'react-native';
+-import React, { useEffect, useState, useCallback} from 'react';
++import React, { useCallback, useState } from 'react';
++import { StyleSheet, Text, View, ScrollView } from 'react-native';
++import { getTasks } from '../../utils/streakstorage';
+ import { useFocusEffect } from '@react-navigation/native';
+ import { SafeAreaView } from 'react-native-safe-area-context';
+-import { getTasks } from '../utils/streakstorage.js';
+ 
+ const TOTAL_DAYS = 21;
+ 
+-//StreakCard component
+ const StreakCard = ({ name, streak }) => {
+   const progress = (streak / TOTAL_DAYS) * 100;
+ 
+@@ -24,7 +23,6 @@ const StreakCard = ({ name, streak }) => {
+   );
+ };
+ 
+-
+ const Streaks = () => {
+   const [streaks, setStreaks] = useState([]);
+ 
+@@ -37,28 +35,22 @@ const Streaks = () => {
+         const allTasks = await getTasks();
+         setStreaks(allTasks);
+       };
+-  
+       fetchStreaks();
+-  
+-      // Optionally: return a cleanup function if needed
+-      return () => {};
+-    }, []) 
++    }, [])
+   );
+ 
+   return (
+-    <SafeAreaView style={{ flex: 1 }}>
+-      <ScrollView contentContainerStyle={styles.container}>
+-        {streaks.map((task) => (
+-          <StreakCard key={task.name} name={task.name} streak={task.streak|| 0} />
+-        ))}
+-      </ScrollView>
+-      </SafeAreaView>
+-    );
+-    
+-  
+-}
+-
++     <SafeAreaView style={{ flex: 1 }}>
++    <ScrollView contentContainerStyle={styles.container}>
++      {streaks.map((task) => (
++        <StreakCard key={task.name} name={task.name} streak={task.streak} />
++      ))}
++    </ScrollView>
++    </SafeAreaView>
++  );
++};
+ 
++export default Streaks;
+ 
+ const styles = StyleSheet.create({
+   container: {
+@@ -105,6 +97,4 @@ const styles = StyleSheet.create({
+     marginTop: 4,
+     color: '#555',
+   },
+-});
+-
+-export default Streaks;
+\ No newline at end of file
++});
+\ No newline at end of file
+diff --git a/app/index.jsx b/app/index.jsx
+index 9a80db72..913fd98a 100644
+--- a/app/index.jsx
++++ b/app/index.jsx
+@@ -1,232 +1,59 @@
+ import React, { useState, useEffect } from 'react';
+ import {
+   StyleSheet,
+-  Text,
+   View,
+   Image,
+   TouchableOpacity,
+   ScrollView,
+-  TextInput,
+   KeyboardAvoidingView,
+   Platform,
++  Keyboard,
++  Pressable
+ } from 'react-native';
+-import { SafeAreaView } from 'react-native-safe-area-context';
+-import Logo from '../assets/ElevateYouLogo.png';
+-import {
+-  getTasks,
+-  addTask,
+-  toggleTaskCompletion,
+-  deleteTask,
+-} from '../utils/streakstorage';
+-import { format } from 'date-fns';
+-
+-const Home = () => {
+-  const [tasks, setTasks] = useState([]);
+-  const [completed, setCompleted] = useState({});
+-  const [adding, setAdding] = useState(false);
+-  const [newTask, setNewTask] = useState('');
+-
+-  useEffect(() => {
+-    const loadTasks = async () => {
+-      const stored = await getTasks();
+-      setTasks(stored);
+-
+-      // Determine which tasks were completed today
+-      const today = format(new Date(), 'yyyy-MM-dd');
+-      const completedMap = {};
+-      stored.forEach(task => {
+-        completedMap[task.name] = task.lastCompleted === today;
+-      });
+-      setCompleted(completedMap);
+-    };
+-
+-    loadTasks();
+-  }, []);
+-
+-  const toggleTask = async (taskName) => {
+-    const updated = !completed[taskName];
+-    setCompleted({ ...completed, [taskName]: updated });
+-    await toggleTaskCompletion(taskName);
+-
+-    const updatedTasks = await getTasks();
+-    setTasks(updatedTasks);
+-  };
+-
+-  const handleDelete = async (taskName) => {
+-    await deleteTask(taskName);
+-    const updatedTasks = tasks.filter((t) => t.name !== taskName);
+-    setTasks(updatedTasks);
+-    const updatedCompleted = { ...completed };
+-    delete updatedCompleted[taskName];
+-    setCompleted(updatedCompleted);
+-  };
+ 
+-  const handleAddTask = async () => {
+-    if (newTask.trim() !== '' && !tasks.find(t => t.name === newTask)) {
+-      await addTask(newTask);
+-      const updatedTasks = await getTasks();
+-      setTasks(updatedTasks);
+-      setCompleted({ ...completed, [newTask]: false });
+-      setNewTask('');
+-      setAdding(false);
+-    }
+-  };
++import { useRouter } from 'expo-router';
+ 
++import { Text, TextInput } from 'react-native-paper';
+ 
++export default function AuthScreen() {
++  const router = useRouter();
+   return (
+-    <SafeAreaView style={{ flex: 1 }}>
+-      <KeyboardAvoidingView
+-        style={{ flex: 1 }}
+-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+-        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
++    <KeyboardAvoidingView
++      behaviour={Platform.OS === 'ios' ? 'padding' : 'height'}
+       >
+-        <ScrollView contentContainerStyle={styles.container} style={{ flex: 1 }}>
+-          <Image source={Logo} style={styles.logo} />
+-
+-          <View style={styles.card}>
+-            <Text style={styles.cardTitle}>Today’s Tasks</Text>
+-
+-            {tasks.length === 0 && (
+-              <Text style={styles.noTasks}>No habits yet. Add one below!</Text>
+-            )}
+-
+-            {tasks.map((task) => (
+-              <View
+-                key={task.name}
+-                style={[
+-                  styles.taskRow,
+-                  completed[task.name] && styles.taskRowCompleted
+-                ]}
+-              >
+-                <TouchableOpacity
+-                  style={styles.taskButton}
+-                  onPress={() => toggleTask(task.name)}
+-                >
+-                  <Text style={styles.taskText}>
+-                    {completed[task.name] ? `✅ ${task.name}` : task.name}
+-                  </Text>
+-                </TouchableOpacity>
+-
+-                <TouchableOpacity onPress={() => handleDelete(task.name)}>
+-                  <Text style={styles.deleteIcon}>🗑</Text>
+-                </TouchableOpacity>
+-              </View>
+-            ))}
+-
+-            {adding ? (
+-              <View style={styles.addSection}>
+-                <TextInput
+-                  placeholder="Enter new habit..."
+-                  style={styles.input}
+-                  value={newTask}
+-                  onChangeText={setNewTask}
+-                  autoFocus
+-                  returnKeyType="done"
+-                  onSubmitEditing={handleAddTask}
+-                />
+-                <TouchableOpacity onPress={handleAddTask} style={styles.confirmBtn}>
+-                  <Text style={{ color: '#fff' }}>Add</Text>
+-                </TouchableOpacity>
+-              </View>
+-            ) : (
+-              <Text style={styles.addNew} onPress={() => setAdding(true)}>
+-                + Add new habit
+-              </Text>
+-            )}
+-          </View>
+-        </ScrollView>
++        <View>
++          <Text>
++            Create Account
++          </Text>
++
++          <TextInput 
++            label="Email"
++            autoCapitalize="none"
++            keyboardType="email-address"
++            placeholder="example@gmail.com"
++            />
++
++          <Pressable
++            onPress={() => {
++              // Handle sign up logic here
++              // For now, just navigate to the main screen
++              router.push('/Homepage/main');
++            }}
++            style={({ pressed }) => [
++              {
++                backgroundColor: pressed ? '#ddd' : '#6200ee',
++                padding: 10,
++                borderRadius: 5,
++                marginTop: 10,
++              },
++            ]}
++            >
++              <Text>
++                To Home
++                </Text> 
++            </Pressable>
++
++        </View>
+       </KeyboardAvoidingView>
+-    </SafeAreaView>
+   );
+-};
+-
+-const styles = StyleSheet.create({
+-  container: {
+-    flexGrow: 1,
+-    justifyContent: 'center',
+-    alignItems: 'center',
+-    paddingVertical: 40,
+-    backgroundColor: '#F5F5F5',
+-  },
+-  logo: {
+-    width: 150,
+-    height: 150,
+-    marginBottom: 20,
+-    resizeMode: 'contain',
+-  },
+-  card: {
+-    width: '90%',
+-    padding: 20,
+-    backgroundColor: '#FFFFFF',
+-    borderRadius: 20,
+-    shadowColor: '#000',
+-    shadowOpacity: 0.1,
+-    shadowOffset: { width: 0, height: 4 },
+-    shadowRadius: 8,
+-    elevation: 5,
+-    alignSelf: 'center',
+-  },
+-  cardTitle: {
+-    fontWeight: 'bold',
+-    fontSize: 20,
+-    marginBottom: 16,
+-    textAlign: 'center',
+-  },
+-  noTasks: {
+-    textAlign: 'center',
+-    marginBottom: 10,
+-    color: '#888',
+-  },
+-  taskRow: {
+-    flexDirection: 'row',
+-    alignItems: 'center',
+-    marginBottom: 10,
+-    width: '100%',
+-    backgroundColor: '#EEE',
+-    borderRadius: 12,
+-    paddingVertical: 12,
+-    paddingHorizontal: 16,
+-    justifyContent: 'space-between',
+-  },
+-  taskRowCompleted: {
+-    backgroundColor: '#B4F8C8',
+-  },
+-  taskButton: {
+-    flex: 1,
+-  },
+-  taskText: {
+-    fontSize: 16,
+-  },
+-  deleteIcon: {
+-    marginLeft: 12,
+-    fontSize: 20,
+-    color: 'gray',
+-  },
+-  addNew: {
+-    color: '#007AFF',
+-    textAlign: 'center',
+-    marginTop: 10,
+-    fontWeight: '500',
+-  },
+-  addSection: {
+-    marginTop: 10,
+-    flexDirection: 'row',
+-    alignItems: 'center',
+-  },
+-  input: {
+-    flex: 1,
+-    backgroundColor: '#F0F0F0',
+-    paddingVertical: 8,
+-    paddingHorizontal: 12,
+-    borderRadius: 10,
+-    marginRight: 10,
+-  },
+-  confirmBtn: {
+-    backgroundColor: '#007AFF',
+-    paddingVertical: 8,
+-    paddingHorizontal: 14,
+-    borderRadius: 10,
+-  },
+-});
+-
+-export default Home;
+\ No newline at end of file
++}
+\ No newline at end of file
+-- 
+2.47.1.windows.1
+

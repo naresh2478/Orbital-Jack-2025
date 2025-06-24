@@ -1,0 +1,39 @@
+From 31306d7a94449c2decce4ac73869fabfedab89a2 Mon Sep 17 00:00:00 2001
+From: brendaan07 <brendaaaan07@gmail.com>
+Date: Sat, 21 Jun 2025 18:25:38 +0800
+Subject: [PATCH 8/8] local cache for offline access
+
+---
+ utils/firebase.js | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/utils/firebase.js b/utils/firebase.js
+index cbe431f5..465c9e61 100644
+--- a/utils/firebase.js
++++ b/utils/firebase.js
+@@ -1,7 +1,7 @@
+-
+-import { initializeApp } from 'firebase/app';
++//this file handles auth only, not habit DB management
++import { initializeApp, } from 'firebase/app';
+ import { getAuth } from 'firebase/auth';
+-import { getFirestore } from 'firebase/firestore';
++import { persistentLocalCache, initializeFirestore  } from 'firebase/firestore';
+ 
+ 
+ const firebaseConfig = {
+@@ -16,5 +16,9 @@ const firebaseConfig = {
+ 
+ const app = initializeApp(firebaseConfig);
+ export const auth = getAuth(app);
+-export const db = getFirestore(app);
++export const db = initializeFirestore(app, {
++  localCache: persistentLocalCache(),
++});
+ 
++//localCache: persistentLocalCache() is used to persist data across app restarts 
++// This is useful for offline capabilities and ensuring data is not lost when the app is closed.
+\ No newline at end of file
+-- 
+2.47.1.windows.1
+

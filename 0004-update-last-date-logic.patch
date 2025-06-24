@@ -1,0 +1,241 @@
+From 7a89a0a86b3000575bbae1943907f488ac3c14a2 Mon Sep 17 00:00:00 2001
+From: brendaan07 <brendaaaan07@gmail.com>
+Date: Sat, 31 May 2025 19:11:05 +0800
+Subject: [PATCH 4/8] update last date logic
+
+---
+ app/streaks.jsx        | 105 ++++++++++++++++++++++++++++-------------
+ utils/streakstorage.js |  50 +++++++++++++-------
+ 2 files changed, 103 insertions(+), 52 deletions(-)
+
+diff --git a/app/streaks.jsx b/app/streaks.jsx
+index 78a88fbd..def8923e 100644
+--- a/app/streaks.jsx
++++ b/app/streaks.jsx
+@@ -4,10 +4,33 @@ import { useFocusEffect } from '@react-navigation/native';
+ import { SafeAreaView } from 'react-native-safe-area-context';
+ import { getTasks } from '../utils/streakstorage.js';
+ 
++const TOTAL_DAYS = 21;
++
++//StreakCard component
++const StreakCard = ({ name, streak }) => {
++  const progress = (streak / TOTAL_DAYS) * 100;
++
++  return (
++    <View style={styles.card}>
++      <View style={styles.header}>
++        <Text style={styles.name}>{name}</Text>
++        <Text style={styles.streak}>Streak: {streak} days</Text>
++      </View>
++      <View style={styles.progressBar}>
++        <View style={[styles.progress, { width: `${progress}%` }]} />
++      </View>
++      <Text style={styles.counter}>{streak}/{TOTAL_DAYS}</Text>
++    </View>
++  );
++};
++
+ 
+ const Streaks = () => {
+   const [streaks, setStreaks] = useState([]);
+ 
++  //useFocusEffect is used to fetch streaks when the screen is focused (reloaded)
++  //calls getTasks to load full task array
++  //fetch streaks state
+   useFocusEffect(
+     useCallback(() => {
+       const fetchStreaks = async () => {
+@@ -24,50 +47,64 @@ const Streaks = () => {
+ 
+   return (
+     <SafeAreaView style={{ flex: 1 }}>
+-          <KeyboardAvoidingView
+-            style={{ flex: 1 }}
+-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+-            keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0} // tweak offset as needed
+-          >
+-
+-    <View style={{ padding: 20 }}>
+-      {streaks.length === 0 ? (
+-  <Text>No streaks to show</Text>
+-) : (streaks.map((task) => (
+-        <Text key={task.name}>
+-          {task.name}: 🔥 {task.streak} day{task.streak !== 1 ? 's' : ''}
+-        </Text>)
+-      ))}
+-    </View>
+-
+-          
+-          {/* <View style={styles.card}>
+-              <Text>streaks</Text>
+-          </View>
+-
+-          <View style={styles.card}>
+-              <Text>penis</Text>
+-          </View>  */}
+-
+-
+-      </KeyboardAvoidingView>
+-    </SafeAreaView>
+-  )
++      <ScrollView contentContainerStyle={styles.container}>
++        {streaks.map((task) => (
++          <StreakCard key={task.name} name={task.name} streak={task.streak|| 0} />
++        ))}
++      </ScrollView>
++      </SafeAreaView>
++    );
++    
++  
+ }
+ 
+ 
+ 
+ const styles = StyleSheet.create({
++  container: {
++    padding: 16,
++    alignItems: 'center',
++  },
+   card: {
++    width: '90%',
++    borderRadius: 12,
++    padding: 16,
++    marginVertical: 10,
+     backgroundColor: '#fff',
+-    padding: 20,
+-    borderRadius: 10,
+-    marginBottom: 20,
+     shadowColor: '#000',
+-    shadowOffset: { width: 0, height: 2 },
+     shadowOpacity: 0.1,
+     shadowRadius: 4,
++    shadowOffset: { width: 0, height: 2 },
++    elevation: 4,
++  },
++  header: {
++    flexDirection: 'row',
++    justifyContent: 'space-between',
++  },
++  name: {
++    fontSize: 18,
++    fontWeight: 'bold',
++  },
++  streak: {
++    fontSize: 16,
++    color: '#555',
++  },
++  progressBar: {
++    height: 10,
++    backgroundColor: '#ccc',
++    borderRadius: 5,
++    marginTop: 10,
++  },
++  progress: {
++    height: '100%',
++    backgroundColor: '#526FFF',
++    borderRadius: 5,
++  },
++  counter: {
++    textAlign: 'right',
++    marginTop: 4,
++    color: '#555',
+   },
+-})
++});
+ 
+ export default Streaks;
+\ No newline at end of file
+diff --git a/utils/streakstorage.js b/utils/streakstorage.js
+index d7f8c8f0..2bad744e 100644
+--- a/utils/streakstorage.js
++++ b/utils/streakstorage.js
+@@ -9,6 +9,9 @@ const TASKS_KEY = 'tasks';
+  * Get all tasks with their streak data from AsyncStorage backend
+  *  
+  */
++
++//getTasks reads the saved tasks array from AsyncStorage (under key "tasks")
++//returns the array or empty array
+ export const getTasks = async () => {
+   try {
+     const jsonValue = await AsyncStorage.getItem(TASKS_KEY);
+@@ -31,9 +34,9 @@ export const saveTasks = async (tasks) => {
+   }
+ };
+ 
+-/**
+- * Add a new task
+- */
++//reads current tasks from AsyncStorage, checks if taskName already exists
++//if taskName does not exist, set streak = 0
++//save update list
+ export const addTask = async (taskName) => {
+   const tasks = await getTasks();
+   if (tasks.find((t) => t.name === taskName)) return;
+@@ -47,23 +50,35 @@ export const addTask = async (taskName) => {
+   await saveTasks(tasks);
+ };
+ 
+-/**
+- * Toggle completion and update streak
+- */
++//reads tasks and updates lastCompleted and streaks fields
++//if last completed yesterday, increment streak
++//else, reset streak to 1
++//saves updated tasks back to AsyncStorage
+ export const toggleTaskCompletion = async (taskName) => {
+   const tasks = await getTasks();
+   const today = format(new Date(), 'yyyy-MM-dd');
+ 
+   const updatedTasks = tasks.map((task) => {
+     if (task.name === taskName) {
+-      if (task.lastCompleted === today) {
+-        // Already completed today → unmark
+-        return {
+-          ...task,
+-          lastCompleted: null,
+-          streak: Math.max(task.streak - 1, 0),
+-        };
+-      }
++        if (task.lastCompleted === today) {
++            // Already completed today → unmark
++          
++            const updatedStreak = Math.max(task.streak - 1, 0);
++           //when unchecking from today, Last completed should be set to yesterday
++           //not reset to 0
++            let newLastCompleted = null;
++            if (updatedStreak > 0) {
++              const previousDate = new Date();
++              previousDate.setDate(previousDate.getDate() - updatedStreak);
++              newLastCompleted = format(previousDate, 'yyyy-MM-dd');
++            }
++          
++            return {
++              ...task,
++              lastCompleted: newLastCompleted,
++              streak: updatedStreak,
++            };
++          }
+ 
+       const yesterday = format(
+         new Date(new Date().setDate(new Date().getDate() - 1)),
+@@ -82,12 +97,11 @@ export const toggleTaskCompletion = async (taskName) => {
+     return task;
+   });
+ 
+-  await saveTasks(updatedTasks);
++  await saveTasks(updatedTasks); //writes back to AsyncStorage
+ };
+ 
+-/**
+- * Get current streak count for a specific task
+- */
++//reads all tasks from AsyncStorage and finds the task with the given name
++//returns the streak of that task, or 0 if not found
+ export const getStreak = async (taskName) => {
+   const tasks = await getTasks();
+   const task = tasks.find((t) => t.name === taskName);
+-- 
+2.47.1.windows.1
+
