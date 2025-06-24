@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  StyleSheet,
   SafeAreaView,
   KeyboardAvoidingView,
   ScrollView,
@@ -12,8 +13,10 @@ import {
 } from 'react-native';
 
 import { format } from 'date-fns';
-import Logo from './assets/logo.png'; // adjust path
-import * as taskAPI from './firebaseTasks'; // import the backend functions
+import Logo from '../../assets/ElevateYouLogo.png';
+import * as taskAPI from '../../utils/streakstoragedb'; // import the backend functions 
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../utils/firebase';
 
 const Home = () => {
   const [tasks, setTasks] = useState([]);
@@ -23,28 +26,38 @@ const Home = () => {
 
   // Load tasks and set completed map on mount
   useEffect(() => {
-    const loadTasks = async () => {
-      const loadedTasks = await taskAPI.getTasks();
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log('✅ Logged in as:', user.email);
+      loadTasks(); // only load tasks when user is authenticated
+    } else {
+      console.log('❌ Not logged in');
+    }
+  });
 
-      setTasks(loadedTasks);
+  return () => unsubscribe(); // cleanup listener on unmount
+}, []);
 
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const completedMap = {};
-      loadedTasks.forEach(task => {
-        completedMap[task.name] = task.lastCompleted === today;
-      });
-      setCompleted(completedMap);
-    };
+// Define loadTasks outside useEffect so it's accessible
+const loadTasks = async () => {
+  const loadedTasks = await taskAPI.getTasks(uid);
 
-    loadTasks();
-  }, []);
+  setTasks(loadedTasks);
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const completedMap = {};
+  loadedTasks.forEach(task => {
+    completedMap[task.name] = task.lastCompleted === today;
+  });
+  setCompleted(completedMap);
+};
 
   // Toggle task and reload tasks
   const toggleTask = async (taskName) => {
     await taskAPI.toggleTaskCompletion(taskName);
 
     // Refresh
-    const updatedTasks = await taskAPI.getTasks();
+    const updatedTasks = await taskAPI.getTasks(uid);
     setTasks(updatedTasks);
 
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -57,26 +70,50 @@ const Home = () => {
 
   // Delete task locally and remotely
   const handleDelete = async (taskName) => {
-    await taskAPI.deleteTask(taskName);
-    const updatedTasks = tasks.filter((t) => t.name !== taskName);
-    setTasks(updatedTasks);
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    console.warn('No user signed in. Cannot delete task.');
+    return;
+  }
 
-    const updatedCompleted = { ...completed };
-    delete updatedCompleted[taskName];
-    setCompleted(updatedCompleted);
-  };
+  await taskAPI.deleteTask(taskName, uid);
+
+  // Update local tasks state after deletion
+  const updatedTasks = tasks.filter((t) => t.name !== taskName);
+  setTasks(updatedTasks);
+
+  const updatedCompleted = { ...completed };
+  delete updatedCompleted[taskName];
+  setCompleted(updatedCompleted);
+  console.log(`Task "${taskName}" deleted successfully.`);
+  }
 
   // Add new task
   const handleAddTask = async () => {
-    if (newTask.trim() !== '' && !tasks.find(t => t.name === newTask)) {
-      await taskAPI.addTask(newTask);
+    console.log('Trying to add:', newTask);
 
-      const updatedTasks = await taskAPI.getTasks();
+    try {
+    if (newTask.trim() !== '' && !tasks.find(t => t.name === newTask)) {
+      const uid = auth.currentUser?.uid;
+      console.log('Current UID:', uid); // Add this debug log
+      
+      if (!uid) {
+        console.warn('No user logged in!');
+        return;
+      }
+
+      await taskAPI.addTask(newTask, uid); 
+      console.log('Task added to Firestore');
+
+      const updatedTasks = await taskAPI.getTasks(uid);
       setTasks(updatedTasks);
 
       setCompleted({ ...completed, [newTask]: false });
       setNewTask('');
       setAdding(false);
+    }
+    } catch (error) {
+    console.error('Error adding task:', error);
     }
   };
 
@@ -146,5 +183,95 @@ const Home = () => {
     </SafeAreaView>
   );
 };
+
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+    backgroundColor: '#F5F5F5',
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+    resizeMode: 'contain',
+  },
+  card: {
+    width: '90%',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 5,
+    alignSelf: 'center',
+  },
+  cardTitle: {
+    fontWeight: 'bold',
+    fontSize: 20,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  noTasks: {
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#888',
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    width: '100%',
+    backgroundColor: '#EEE',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+  },
+  taskRowCompleted: {
+    backgroundColor: '#B4F8C8',
+  },
+  taskButton: {
+    flex: 1,
+  },
+  taskText: {
+    fontSize: 16,
+  },
+  deleteIcon: {
+    marginLeft: 12,
+    fontSize: 20,
+    color: 'gray',
+  },
+  addNew: {
+    color: '#007AFF',
+    textAlign: 'center',
+    marginTop: 10,
+    fontWeight: '500',
+  },
+  addSection: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#F0F0F0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  confirmBtn: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+});
 
 export default Home;
