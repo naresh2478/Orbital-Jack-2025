@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
-import { getTasks } from '../../utils/streakstorage';
+import { getTasks } from '../../utils/streakstoragedb';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
