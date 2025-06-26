@@ -54,10 +54,11 @@ const loadTasks = async () => {
 
   // Toggle task and reload tasks
   const toggleTask = async (taskName) => {
+    console.log('Tapped task:', taskName);
     await taskAPI.toggleTaskCompletion(taskName);
 
     // Refresh
-    const updatedTasks = await taskAPI.getTasks(uid);
+    const updatedTasks = await taskAPI.getTasks();  //removed the argument
     setTasks(updatedTasks);
 
     const today = format(new Date(), 'yyyy-MM-dd');

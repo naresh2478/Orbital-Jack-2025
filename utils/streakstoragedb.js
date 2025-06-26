@@ -9,15 +9,18 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { db, auth } from './firebaseConfig';  // your firebase config file
+import { db, auth } from './firebase'; // your firebase config
 
-// Helper: get current user id
+// Helper: Get current user ID
 const getUid = () => auth.currentUser?.uid;
 
-// Fetch all tasks for current user
+// ✅ Fetch all tasks for current user
 export const getTasks = async () => {
   const uid = getUid();
-  if (!uid) return [];
+  if (!uid) {
+    console.log("❌ No UID found in getTasks()");
+    return [];
+  }
 
   const habitsRef = collection(db, 'users', uid, 'habits');
   const snapshot = await getDocs(query(habitsRef, orderBy('createdAt', 'asc')));
@@ -28,21 +31,26 @@ export const getTasks = async () => {
   }));
 };
 
-// Save or update a single task doc
+// ✅ Save or update a single task doc
 const saveTaskDoc = async (uid, taskId, taskData) => {
   const taskDoc = doc(db, 'users', uid, 'habits', taskId);
   await setDoc(taskDoc, taskData, { merge: true });
 };
 
-// Add a new task
+// ✅ Add a new task
 export const addTask = async (taskName) => {
   const uid = getUid();
-  if (!uid) return;
+  if (!uid) {
+    console.log("❌ No UID in addTask()");
+    return;
+  }
 
   const tasks = await getTasks();
-  if (tasks.find(t => t.name === taskName)) return; // task exists
+  if (tasks.find(t => t.name === taskName)) {
+    console.log("⚠️ Task already exists:", taskName);
+    return;
+  }
 
-  // Create new habit doc with initial streak = 0
   const newTaskRef = doc(collection(db, 'users', uid, 'habits')); // auto id
   const newTask = {
     name: taskName,
@@ -51,32 +59,47 @@ export const addTask = async (taskName) => {
     createdAt: new Date(),
   };
   await setDoc(newTaskRef, newTask);
+  console.log("✅ Task added:", taskName);
 };
 
-// Delete a task
+// ✅ Delete a task
 export const deleteTask = async (taskName) => {
   const uid = getUid();
-  if (!uid) return;
+  if (!uid) {
+    console.log("❌ No UID in deleteTask()");
+    return;
+  }
 
   const tasks = await getTasks();
   const task = tasks.find(t => t.name === taskName);
-  if (!task) return;
+  if (!task) {
+    console.log("⚠️ Task not found:", taskName);
+    return;
+  }
 
   const taskDoc = doc(db, 'users', uid, 'habits', task.id);
   await deleteDoc(taskDoc);
+  console.log("🗑️ Deleted task:", taskName);
 };
 
-// Toggle completion and update streak
+// ✅ Toggle completion and update streak
 export const toggleTaskCompletion = async (taskName) => {
   const uid = getUid();
-  if (!uid) return;
+  if (!uid) {
+    console.log("❌ No UID in toggleTaskCompletion()");
+    return;
+  }
 
   const tasks = await getTasks();
   const today = format(new Date(), 'yyyy-MM-dd');
-
-  // Find the task
   const task = tasks.find(t => t.name === taskName);
-  if (!task) return;
+
+  if (!task) {
+    console.log("❌ Task not found in toggleTaskCompletion:", taskName);
+    return;
+  }
+
+  console.log("📌 Before toggle:", task);
 
   let newLastCompleted = null;
   let newStreak = 0;
@@ -105,13 +128,14 @@ export const toggleTaskCompletion = async (taskName) => {
     lastCompleted: newLastCompleted,
     streak: newStreak,
   });
+
+  console.log(`✅ Task "${taskName}" updated in Firestore`);
+  console.log("➡️ New streak:", newStreak, "➡️ New lastCompleted:", newLastCompleted);
 };
 
-// Get streak for a task by name
+// ✅ Get streak for a task by name
 export const getStreak = async (taskName) => {
   const tasks = await getTasks();
   const task = tasks.find(t => t.name === taskName);
   return task ? task.streak : 0;
 };
-
-
