@@ -7,6 +7,7 @@ import {
   deleteDoc,
   query,
   orderBy,
+  getDoc
 } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { db, auth } from './firebase'; // your firebase config
@@ -141,33 +142,57 @@ export const getStreak = async (taskName) => {
 };
 
 export const setElevation = async (uid) => {
-   console.log('🚀 setElevation called with UID:', uid);
   if (!uid) {
     console.log("❌ No UID passed to setElevation()");
     return;
   }
 
   const today = format(new Date(), 'yyyy-MM-dd');
+  const userRef = doc(db, 'users', uid);
+  const userSnap = await getDoc(userRef);
 
+  if (!userSnap.exists()) {
+    console.error('❌ User doc not found');
+    return;
+  }
+
+  const userData = userSnap.data();
+  const previousElevation = userData.elevation || 0;
+  const lastCompletedCount = userData.lastCompletedCount || 0;
+  const lastUpdate = userData.lastElevationUpdate || '';
+
+  // Count how many habits completed today currently
   const habitsRef = collection(db, 'users', uid, 'habits');
   const snapshot = await getDocs(habitsRef);
 
-  let completedTodayCount = 0;
-
+  let currentCompletedCount = 0;
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
     if (data.lastCompleted === today) {
-      completedTodayCount++;
+      currentCompletedCount++;
     }
   });
 
-  const newElevation = completedTodayCount * 10;
+  let delta = 0;
+
+  if (lastUpdate === today) {
+    // Already updated today, calculate difference in completion count
+    delta = currentCompletedCount - lastCompletedCount;
+  } else {
+    // First update today, assume lastCompletedCount = 0 for today
+    delta = currentCompletedCount; 
+  }
+
+  const newElevation = previousElevation + delta * 10;
 
   try {
-    await updateDoc(doc(db, 'users', uid), {
+    await updateDoc(userRef, {
       elevation: newElevation,
+      lastCompletedCount: currentCompletedCount, 
+      //lastCompletedCount tracks how many completed today the last time you called (today)
+      lastElevationUpdate: today,
     });
-    console.log(`🪜 Elevation updated to ${newElevation} for user ${uid}`);
+    console.log(`🪜 Elevation updated by ${delta * 10} to ${newElevation} for user ${uid}`);
   } catch (error) {
     console.error('❌ Error updating elevation:', error);
   }
