@@ -3,7 +3,7 @@ import { Image } from "react-native";
 
 import homeIcon from "../../assets/HomepageIcon.png";
 import streaksIcon from "../../assets/StreaksIcon.png";
-import elevationIcon from "../../assets/ElevationIcon.png"; 
+import elevationIcon from "../../assets/MountainIcon.png"; 
 
 const _layout = () => {
   return (
@@ -22,12 +22,12 @@ const _layout = () => {
           tabBarIcon: ({ color }) => (
             <Image
               source={elevationIcon}
-              style={{ width: 24, height: 24, tintColor: color }}
+              style={{ width: 30, height: 30, tintColor: color, marginRight: 3 }}
             />
           ),
         }}
       />
-      
+
       <Tabs.Screen
         name="maindb"
         options={{
