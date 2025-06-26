@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Alert,
   StyleSheet,
   SafeAreaView,
   KeyboardAvoidingView,
@@ -152,9 +153,27 @@ const loadTasks = async () => {
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => handleDelete(task.name)}>
-                  <Text style={styles.deleteIcon}>🗑</Text>
-                </TouchableOpacity>
+                <TouchableOpacity onPress={() =>
+                          Alert.alert(
+                            'Confirm Delete',
+                            'Are you sure you want to remove this task?',
+                            [
+                              {
+                                text: 'Keep',
+                                style: 'cancel', // Does nothing, just closes the popup
+                              },
+                              {
+                                text: 'Remove',
+                                style: 'destructive', // Optional, makes it red on iOS
+                                onPress: () => handleDelete(task.name), // Only triggers delete
+                              },
+                            ],
+                            { cancelable: true }
+                          )
+                        }
+                  >
+                <Text style={styles.deleteIcon}>🗑</Text>
+                  </TouchableOpacity>
               </View>
             ))}
 
