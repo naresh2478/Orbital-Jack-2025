@@ -14,31 +14,6 @@ const _layout = () => {
         tabBarInactiveTintColor: "gray",
       }}
     >
-      <Tabs.Screen
-        name="main"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => (
-            <Image
-              source={homeIcon}
-              style={{ width: 24, height: 24, tintColor: color }}
-            />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="streaks"
-        options={{
-          title: "Streaks",
-          tabBarIcon: ({ color }) => (
-            <Image
-              source={streaksIcon}
-              style={{ width: 24, height: 24, tintColor: color }}
-            />
-          ),
-        }}
-      />
 
       <Tabs.Screen
         name="elevation"
@@ -52,6 +27,34 @@ const _layout = () => {
           ),
         }}
       />
+      
+      <Tabs.Screen
+        name="maindb"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color }) => (
+            <Image
+              source={homeIcon}
+              style={{ width: 24, height: 24, tintColor: color }}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="streaksdb"
+        options={{
+          title: "Streaks",
+          tabBarIcon: ({ color }) => (
+            <Image
+              source={streaksIcon}
+              style={{ width: 24, height: 24, tintColor: color }}
+            />
+          ),
+        }}
+      />
+
+      
     </Tabs>
   );
 };
