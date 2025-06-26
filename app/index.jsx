@@ -11,6 +11,7 @@ import {
   Pressable, 
   Alert
 } from 'react-native';
+import Logo from '../assets/ElevateYouLogo.png';
 
 import { useRouter } from 'expo-router';
 
@@ -23,6 +24,26 @@ import { collection, doc, setDoc } from 'firebase/firestore'; // Import Firestor
 export default function AuthScreen() {
   const router = useRouter();
 
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  //this is supposed to maintain auth state across app restarts 
+  //but idk if it works lol
+  //import { onAuthStateChanged } from 'firebase/auth';
+  // useEffect(() => { 
+  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
+  //     setUser(user);
+  //     setLoading(false);
+  //     if (user) {
+  //       router.push('/main');  // navigate programmatically
+  //     } else {
+  //       router.push('/index');     // navigate programmatically
+  //     }
+  //   });
+  //   return unsubscribe;
+  // }, []);
+
+
   const [isSignUp, setIsSignUp] = useState(true); //handle logic for sign up or sign in 
 
   const handleSwitchMode = () => { //handle UI for sign up or log in
@@ -33,6 +54,12 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
 
   const handleSignUp = async () => {  //handleSignUp function to create a new user
+
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+    
     try {
       
       await createUserWithEmailAndPassword(auth, email.trim(), password);
@@ -44,7 +71,7 @@ export default function AuthScreen() {
         createdAt: new Date(),
       });
       console.log('User signed up and document created in Firestore');
-      router.push('/Homepage/maindb'); // Navigate to the main screen after sign up
+      router.push('/Homepage/main'); // Navigate to the main screen after sign up
     
 
     Alert.alert('Signup Successful');
@@ -58,31 +85,14 @@ export default function AuthScreen() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       Alert.alert('Login Successful');
-      router.push('/Homepage/maindb'); // Navigate to the main screen after login
+      router.push('/Homepage/main'); // Navigate to the main screen after login
     }
     catch (error) {
       Alert.alert('Login Error', error.message);
     }
   };
 
-  //UNCOMMENT TO IMPLEMENT AUTH STATE PERSISTENCE
-  
-//   import { onAuthStateChanged } from 'firebase/auth';
-// import { auth } from './src/firebase';
-// import { useEffect, useState } from 'react';
 
-//   const [user, setUser] = useState(null);
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, (user) => {
-//       setUser(user);
-//     });
-
-//     return unsubscribe; // cleanup on unmount
-//   }, []);
-
-//   return user ? <HomeScreen /> : <LoginScreen />;
-// };
 
   
 
@@ -90,9 +100,15 @@ export default function AuthScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
       >
-        <View>
-          <Text>
+        <ScrollView
+        contentContainerStyle={styles.content}>
+
+          <Image source={Logo} style={styles.logo} />
+        
+          <Text 
+          style={styles.title}>
             {isSignUp ? "Create Account" : "Welcome Back"}
           </Text>
 
@@ -133,7 +149,7 @@ export default function AuthScreen() {
             onPress={() => {
               
               // For now, just navigate to the main screen 
-               router.push('/Homepage/maindb'); //router push vs replace
+               router.push('/Homepage/main_db'); //router push vs replace
             }}
             style={({ pressed }) => [
               {
@@ -150,7 +166,36 @@ export default function AuthScreen() {
                 
             </Button>
 
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+
+  },
+  input: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+  } ,
+  title: {
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 24,
+  }, logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 10,
+    resizeMode: 'contain',
+    marginLeft: 116,
+  },
+});
