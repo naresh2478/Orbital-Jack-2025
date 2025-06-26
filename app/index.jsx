@@ -69,7 +69,9 @@ export default function AuthScreen() {
       await setDoc(doc(db, 'users', uid), {
         email: email,
         createdAt: new Date(),
-      });
+        elevation: 0, // Initialize elevation to 0
+      }, { merge: true });
+
       console.log('User signed up and document created in Firestore');
       router.push('/Homepage/maindb'); // Navigate to the main screen after sign up
     

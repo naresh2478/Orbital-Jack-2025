@@ -139,3 +139,36 @@ export const getStreak = async (taskName) => {
   const task = tasks.find(t => t.name === taskName);
   return task ? task.streak : 0;
 };
+
+export const setElevation = async (uid) => {
+   console.log('🚀 setElevation called with UID:', uid);
+  if (!uid) {
+    console.log("❌ No UID passed to setElevation()");
+    return;
+  }
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  const habitsRef = collection(db, 'users', uid, 'habits');
+  const snapshot = await getDocs(habitsRef);
+
+  let completedTodayCount = 0;
+
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    if (data.lastCompleted === today) {
+      completedTodayCount++;
+    }
+  });
+
+  const newElevation = completedTodayCount * 10;
+
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      elevation: newElevation,
+    });
+    console.log(`🪜 Elevation updated to ${newElevation} for user ${uid}`);
+  } catch (error) {
+    console.error('❌ Error updating elevation:', error);
+  }
+};

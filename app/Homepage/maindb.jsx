@@ -27,17 +27,25 @@ const Home = () => {
 
   // Load tasks and set completed map on mount
   useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (user) {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user.uid) {
       console.log('✅ Logged in as:', user.email);
       loadTasks(user.uid); // only load tasks when user is authenticated
+      try {
+        await taskAPI.setElevation(user.uid); // Initialize elevation for new user
+      } catch (error) {
+        console.error('Error getting elevation:', error);
+      }
+
     } else {
       console.log('❌ Not logged in');
     }
   });
 
-  return () => unsubscribe(); // cleanup listener on unmount
-}, []);
+  return () => 
+    unsubscribe(); 
+  ;// cleanup listener on unmount
+  }, []);
 
 // Define loadTasks outside useEffect so it's accessible
 const loadTasks = async (uid) => {
@@ -51,6 +59,8 @@ const loadTasks = async (uid) => {
     completedMap[task.name] = task.lastCompleted === today;
   });
   setCompleted(completedMap);
+
+
 };
 
   // Toggle task and reload tasks
@@ -68,6 +78,14 @@ const loadTasks = async (uid) => {
       completedMap[task.name] = task.lastCompleted === today;
     });
     setCompleted(completedMap);
+
+    // Update elevation after toggle
+    const uid = auth.currentUser?.uid;
+    try {
+      await taskAPI.setElevation(uid);
+    } catch (error) {
+      console.error('Error updating elevation:', error);
+    }
   };
 
   // Delete task locally and remotely
@@ -80,6 +98,13 @@ const loadTasks = async (uid) => {
 
   await taskAPI.deleteTask(taskName, uid);
 
+  try {
+      await taskAPI.setElevation(uid);
+      console.log('Elevation updated after toggling task');
+    } catch (error) {
+      console.error('Error updating elevation:', error);
+    }
+
   // Update local tasks state after deletion
   const updatedTasks = tasks.filter((t) => t.name !== taskName);
   setTasks(updatedTasks);
@@ -88,7 +113,8 @@ const loadTasks = async (uid) => {
   delete updatedCompleted[taskName];
   setCompleted(updatedCompleted);
   console.log(`Task "${taskName}" deleted successfully.`);
-  }
+
+  };
 
   // Add new task
   const handleAddTask = async () => {
