@@ -30,7 +30,7 @@ const Home = () => {
   const unsubscribe = onAuthStateChanged(auth, (user) => {
     if (user) {
       console.log('✅ Logged in as:', user.email);
-      loadTasks(); // only load tasks when user is authenticated
+      loadTasks(user.uid); // only load tasks when user is authenticated
     } else {
       console.log('❌ Not logged in');
     }
@@ -40,7 +40,7 @@ const Home = () => {
 }, []);
 
 // Define loadTasks outside useEffect so it's accessible
-const loadTasks = async () => {
+const loadTasks = async (uid) => {
   const loadedTasks = await taskAPI.getTasks(uid);
 
   setTasks(loadedTasks);
