@@ -71,7 +71,7 @@ export default function AuthScreen() {
         createdAt: new Date(),
       });
       console.log('User signed up and document created in Firestore');
-      router.push('/Homepage/main'); // Navigate to the main screen after sign up
+      router.push('/Homepage/maindb'); // Navigate to the main screen after sign up
     
 
     Alert.alert('Signup Successful');
@@ -85,7 +85,7 @@ export default function AuthScreen() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       Alert.alert('Login Successful');
-      router.push('/Homepage/main'); // Navigate to the main screen after login
+      router.push('/Homepage/maindb'); // Navigate to the main screen after login
     }
     catch (error) {
       Alert.alert('Login Error', error.message);
@@ -149,7 +149,7 @@ export default function AuthScreen() {
             onPress={() => {
               
               // For now, just navigate to the main screen 
-               router.push('/Homepage/main_db'); //router push vs replace
+               router.push('/Homepage/maindb'); //router push vs replace
             }}
             style={({ pressed }) => [
               {
