@@ -24,7 +24,14 @@
     "react-native-screens": "~4.10.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.27.7",
+    "@babel/preset-env": "^7.27.2",
+    "@babel/preset-react": "^7.27.1",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.2.0",
+    "babel-jest": "^30.0.2",
+    "jest": "^30.0.3",
+    "jest-expo": "^53.0.7"
   },
   "private": true
 }
