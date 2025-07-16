@@ -12,11 +12,11 @@ import {
   Platform,
   Image,
 } from 'react-native';
-
+import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import Logo from '../../assets/ElevateYouLogo.png';
 import * as taskAPI from '../../utils/streakstoragedb'; // import the backend functions 
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../../utils/firebase';
 
 const Home = () => {
@@ -24,6 +24,8 @@ const Home = () => {
   const [completed, setCompleted] = useState({});
   const [adding, setAdding] = useState(false);
   const [newTask, setNewTask] = useState('');
+
+  const router = useRouter(); //for logout routing
 
   // Load tasks and set completed map on mount
   useEffect(() => {
@@ -145,6 +147,22 @@ const loadTasks = async (uid) => {
     }
   };
 
+  //handle user logout
+  const handleLogout = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      const userEmail = currentUser?.email;
+
+      await signOut(auth);
+      router.push('/'); // Redirect to login screen
+      console.log(`Successfully logged out${userEmail ? ` as: ${userEmail}` : ''}`);
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Logout Error', error.message);
+    }
+  };
+
+
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -223,7 +241,19 @@ const loadTasks = async (uid) => {
                 + Add new habit
               </Text>
             )}
+
           </View>
+          <TouchableOpacity 
+                  onPress={handleLogout}
+                      style={{ padding: 10 }} // Add some padding for better touch area
+                              >
+                    <View>
+                        <Text style={{ textAlign: 'center', marginTop: 20 }}>     
+                          Sign Out 
+                        </Text> 
+                      </View>
+                    </TouchableOpacity>
+            
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

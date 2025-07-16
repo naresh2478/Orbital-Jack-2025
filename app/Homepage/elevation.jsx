@@ -408,8 +408,16 @@ const useElevation = () => {
             console.log('No user document found');
           }
         } catch (err) {
-          setError(err.message);
-        } finally {
+              // Enhanced error handling
+              if (err.code === 'permission-denied') {
+                setError('Login expired - please sign in again');
+                router.push('/auth'); // Redirect if needed
+              } else {
+                setError('Failed to load elevation');
+              }
+              setElevation(0); // Reset on any error
+              console.error('Fetch elevation error:', err);
+            } finally {
           setLoading(false);
         }
       };
