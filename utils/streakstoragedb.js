@@ -11,6 +11,8 @@ import {
 } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { db, auth } from './firebase'; // your firebase config
+import { MOUNTAINS } from './constants';  // path depending on where your constants file is
+
 
 // Helper: Get current user ID
 const getUid = () => auth.currentUser?.uid;
@@ -32,7 +34,28 @@ export const getTasks = async () => {
   }));
 };
 
+// example of what happens after getTasks
+// [
+//   {
+//     id: "abc123",
+//     name: "Drink Water",
+//     streak: 3,
+//     createdAt: timestamp
+//   },
+//   {
+//     id: "xyz456",
+//     name: "Exercise",
+//     streak: 7,
+//     createdAt: timestamp
+//   }
+// ]
+
+
 // ✅ Save or update a single task doc
+// It's used whenever you want to:
+// Add new fields to a task.
+// Update streaks, last completed dates, etc.
+// Without overwriting the whole document.
 const saveTaskDoc = async (uid, taskId, taskData) => {
   const taskDoc = doc(db, 'users', uid, 'habits', taskId);
   await setDoc(taskDoc, taskData, { merge: true });
@@ -158,18 +181,37 @@ export const setElevation = async (uid) => {
 
   const userData = userSnap.data();
   const previousElevation = userData.elevation || 0;
+  let conquered = userData.conquered || 0;
+  let conqueredMountains = userData.conqueredMountains || [];
   const lastCompletedCount = userData.lastCompletedCount || 0;
   const lastUpdate = userData.lastElevationUpdate || '';
+  let totalElevation = userData.totalElevation || 0; 
+
+  if (conquered >= MOUNTAINS.length) {
+    console.log("🎉 All mountains already conquered!");
+    return;
+  }
 
   // Count how many habits completed today currently
   const habitsRef = collection(db, 'users', uid, 'habits');
   const snapshot = await getDocs(habitsRef);
 
   let currentCompletedCount = 0;
+  let bonusElevation = 0;
+
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
     if (data.lastCompleted === today) {
       currentCompletedCount++;
+
+      // ✅ Bonus elevation check per habit
+      if (data.streak === 21) {
+        bonusElevation += 50;
+
+      const habitDocRef = doc(db, 'users', uid, 'habits', docSnap.id);
+      updateDoc(habitDocRef, { streak: 0 });
+      console.log(`🏆 Bonus 50m for habit "${data.name}", streak reset to 0`);
+      }
     }
   });
 
@@ -183,14 +225,41 @@ export const setElevation = async (uid) => {
     delta = currentCompletedCount; 
   }
 
-  const newElevation = previousElevation + delta * 10;
+  let newElevation = previousElevation + delta * 10 + bonusElevation;
+  totalElevation += delta * 10 + bonusElevation; 
+
+  while (newElevation < 0 && conquered > 0) {
+  // Step back to previous mountain
+  conquered -= 1;
+  const prevMountain = MOUNTAINS[conquered];
+  conqueredMountains.pop();
+
+  newElevation += prevMountain.peak;
+  }
+
+  const currentMountain = MOUNTAINS[conquered];
+  if (currentMountain && newElevation >= currentMountain.peak) {
+    conquered += 1;
+    conqueredMountains.push(currentMountain.name);
+    newElevation = 0;
+    console.log(`🎉 Conquered ${currentMountain.name}`);
+  }
+
+  const currentMountainName = (conquered < MOUNTAINS.length)
+    ? MOUNTAINS[conquered].name
+    : 'All Mountains Conquered!';
+
 
   try {
     await updateDoc(userRef, {
       elevation: newElevation,
+      totalElevation: totalElevation,  
+      conquered: conquered,
+      conqueredMountains: conqueredMountains,
       lastCompletedCount: currentCompletedCount, 
       //lastCompletedCount tracks how many completed today the last time you called (today)
       lastElevationUpdate: today,
+      currentMountain: currentMountainName,  
     });
     console.log(`🪜 Elevation updated by ${delta * 10} to ${newElevation} for user ${uid}`);
   } catch (error) {

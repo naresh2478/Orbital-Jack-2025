@@ -359,6 +359,7 @@ import { db, auth } from '../../utils/firebase';
 
 import mountain from '../../assets/MountainPicture.png';
 import avatar from '../../assets/AvatarClimber.png';
+import { MOUNTAINS } from '../../utils/constants';  
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -383,6 +384,7 @@ const positions = {
 // ✅ Local custom hook inside the same file
 const useElevation = () => {
   const [elevation, setElevation] = useState(null);
+  const [currentMountain, setCurrentMountain] = useState(''); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -403,8 +405,10 @@ const useElevation = () => {
           if (userDocSnap.exists()) {
             const data = userDocSnap.data();
             setElevation(data.elevation ?? 0);
+            setCurrentMountain(data.currentMountain || 'Unknown Mountain');
           } else {
             setElevation(0);
+            setCurrentMountain('Unknown Mountain');
             console.log('No user document found');
           }
         } catch (err) {
@@ -418,17 +422,20 @@ const useElevation = () => {
     }, [])
   );
 
-  return { elevation, loading, error };
+  return { elevation, currentMountain, loading, error };
 };
 
 const Elevation = () => {
-  const { elevation, loading, error } = useElevation();
+  const { elevation, currentMountain, loading, error } = useElevation();
 
   if (loading) return <Text style={styles.loading}>Loading...</Text>;
   if (error) return <Text style={styles.error}>Error: {error}</Text>;
 
   const current = Math.min(Math.floor(elevation / 10) * 10, 100);
   const { top, left } = positions[current] || positions[0];
+
+  const currentMountainObj = MOUNTAINS.find(m => m.name === currentMountain);
+  const peakHeight = currentMountainObj ? currentMountainObj.peak : 100;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -437,8 +444,9 @@ const Elevation = () => {
         style={styles.background}
         resizeMode="contain"
       >
-        <Text style={styles.title}>⛰️ Elevation</Text>
-        <Text style={styles.elevationText}>+{elevation}m</Text>
+        {/* <Text style={styles.title}>⛰️ Elevation</Text> */}
+        <Text style={styles.title}>Current Mountain: {currentMountain}</Text>
+        <Text style={styles.elevationText}>{elevation}m / {peakHeight}m</Text>
         <Text style={styles.subtitle}>Complete tasks to climb the mountain!</Text>
 
         <Image source={avatar} style={[styles.avatar, { top, left }]} />

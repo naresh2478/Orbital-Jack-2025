@@ -11,6 +11,7 @@ import {
   TextInput,
   Platform,
   Image,
+  Button
 } from 'react-native';
 
 import { format } from 'date-fns';
@@ -18,8 +19,15 @@ import Logo from '../../assets/ElevateYouLogo.png';
 import * as taskAPI from '../../utils/streakstoragedb'; // import the backend functions 
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../utils/firebase';
+import profileIcon from '../../assets/profileicon.jpg';
+import { useRouter } from 'expo-router'; //added
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
+
 
 const Home = () => {
+  const router = useRouter(); //added
   const [tasks, setTasks] = useState([]);
   const [completed, setCompleted] = useState({});
   const [adding, setAdding] = useState(false);
@@ -46,6 +54,16 @@ const Home = () => {
     unsubscribe(); 
   ;// cleanup listener on unmount
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const uid = auth.currentUser?.uid;
+      if (uid) {
+        loadTasks(uid);
+      }
+    }, [])
+  );
+
 
 // Define loadTasks outside useEffect so it's accessible
 const loadTasks = async (uid) => {
@@ -153,6 +171,16 @@ const loadTasks = async (uid) => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <ScrollView contentContainerStyle={styles.container}>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
+            <TouchableOpacity onPress={() => router.push('/Homepage/userprofile')}>
+              <Image
+              source={profileIcon}
+              style={{ width: 30, height: 30 }}
+              />
+              </TouchableOpacity>
+           </View>
+
           <Image source={Logo} style={styles.logo} />
 
           <View style={styles.card}>
