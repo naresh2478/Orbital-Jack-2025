@@ -220,3 +220,22 @@ export const getPendingFollowers = async (uid) => {
     return [];
   }
 };
+
+// ✅ NEW FUNCTION: fetch full user profile by UID
+export const getUserProfile = async (uid) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      return { uid: userSnap.id, ...userSnap.data() };
+    } else {
+      console.error('❌ User profile not found');
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ Error fetching user profile:', error);
+    return null;
+  }
+};
+
