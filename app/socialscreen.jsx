@@ -1,9 +1,12 @@
+// console.log('Socialscreen loaded from APP folder');
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native';
-import { searchUserByEmail, followUser, unfollowUser, approveFollower, getFollowers, getFollowing, getPendingFollowers } from '../../utils/socialstorage';
-console.log('socialstorage:', ss);
-import { auth, db } from '../../utils/firebase';
+import { searchUserByEmail, followUser, unfollowUser, approveFollower, getFollowers, getFollowing, getPendingFollowers } from '../utils/socialstorage.js';
+import { auth, db } from '../utils/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useRouter } from 'expo-router';
+
+const router = useRouter();
 
 const SocialScreen = () => {
     const [searchEmail, setSearchEmail] = useState('');
@@ -114,6 +117,7 @@ const SocialScreen = () => {
                     </View>
                 )}
             />
+            <Button title="Back to Profile" onPress={() => router.back()} />
         </View>
     );
 };

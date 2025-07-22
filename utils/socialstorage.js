@@ -1,139 +1,222 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native';
-import { searchUserByEmail, followUser, unfollowUser, approveFollower } from '../../utils/socialstorage';
-import { auth, db } from '../../utils/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, arrayRemove, arrayUnion, updateDoc, doc } from 'firebase/firestore';
+import { auth, db } from './firebase';
 
-const SocialScreen = () => {
-  const [searchEmail, setSearchEmail] = useState('');
-  const [searchResult, setSearchResult] = useState(null);
-  const [followers, setFollowers] = useState([]);
-  const [following, setFollowing] = useState([]);
-  const [pendingFollowers, setPendingFollowers] = useState([]);
-
-  useEffect(() => {
-    loadConnections();
-  }, []);
-
-  const loadConnections = async () => {
-    const uid = auth.currentUser?.uid;
-    if (!uid) return;
-
-    try {
-      // Load current user data
-      const userRef = doc(db, 'users', uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-        setPendingFollowers(data.pendingFollowers || []);
-      }
-
-      // TODO: Replace these with your actual backend methods to get followers/following
-      const myFollowers = []; // await getFollowers(uid);
-      const myFollowing = []; // await getFollowing(uid);
-
-      setFollowers(myFollowers);
-      setFollowing(myFollowing);
-    } catch (error) {
-      console.error('❌ Error loading connections:', error);
-    }
-  };
-
-  const handleSearch = async () => {
-    const result = await searchUserByEmail(searchEmail);
-    setSearchResult(result);
-  };
-
-  const handleFollow = async (targetUid) => {
-    await followUser(targetUid);
-    loadConnections();
-  };
-
-  const handleUnfollow = async (targetUid) => {
-    await unfollowUser(targetUid);
-    loadConnections();
-  };
-
-  const handleApprove = async (followerId) => {
-    await approveFollower(followerId);
-    loadConnections();
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Social</Text>
-
-      <TextInput
-        placeholder="Search by Email"
-        value={searchEmail}
-        onChangeText={setSearchEmail}
-        style={styles.input}
-      />
-      <Button title="Search" onPress={handleSearch} />
-
-      {searchResult && (
-        <View style={styles.card}>
-          <Text>Email: {searchResult.email}</Text>
-          <Button title="Follow" onPress={() => handleFollow(searchResult.uid)} />
-        </View>
-      )}
-
-      <Text style={styles.subHeader}>Pending Followers</Text>
-      <FlatList
-        data={pendingFollowers}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text>UID: {item}</Text>
-            <Button title="Approve" onPress={() => handleApprove(item)} />
-          </View>
-        )}
-      />
-
-      <Text style={styles.subHeader}>Following</Text>
-      <FlatList
-        data={following}
-        keyExtractor={(item) => item.uid}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text>{item.email}</Text>
-            <Button title="Unfollow" onPress={() => handleUnfollow(item.uid)} />
-          </View>
-        )}
-      />
-
-      <Text style={styles.subHeader}>Followers</Text>
-      <FlatList
-        data={followers}
-        keyExtractor={(item) => item.uid}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text>{item.email}</Text>
-          </View>
-        )}
-      />
-    </View>
-  );
+// initialise social fields
+export const initializeSocialFields = async (uid) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      privacy: 'public',
+      pendingFollowers: [],
+      followers: [],
+      following: [],
+    });
+    console.log('✅ Initialized social fields');
+  } catch (error) {
+    console.error('❌ Error initializing social fields:', error);
+  }
 };
 
-const styles = StyleSheet.create({
-  container: { padding: 20 },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  subHeader: { fontSize: 20, marginTop: 20, marginBottom: 10 },
-  input: {
-    borderWidth: 1,
-    borderColor: 'gray',
-    padding: 8,
-    marginBottom: 10,
-    borderRadius: 5,
-  },
-  card: {
-    padding: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-});
+// search friends by email
+export const searchUserByEmail = async (email) => {
+  try {
+    const q = query(collection(db, 'users'), where('email', '==', email));
+    const querySnapshot = await getDocs(q);
 
-export default SocialScreen;
+    if (querySnapshot.empty) {
+      return null;  // No user found
+    }
 
+    const userDoc = querySnapshot.docs[0];
+    return { uid: userDoc.id, ...userDoc.data() };
+  } catch (error) {
+    console.error('❌ Error searching user by email:', error);
+    return null;
+  }
+};
+
+// follow a user
+export const followUser = async (targetUserId) => {
+  const currentUserId = auth.currentUser?.uid;
+  if (!currentUserId || !targetUserId) return;
+
+  try {
+    const targetUserRef = doc(db, 'users', targetUserId);
+
+    await updateDoc(targetUserRef, {
+      pendingFollowers: arrayUnion(currentUserId),
+    });
+
+    console.log('✅ Follow request sent');
+  } catch (error) {
+    console.error('❌ Error sending follow request:', error);
+  }
+};
+
+// unfollow user
+export const unfollowUser = async (targetUserId) => {
+  const currentUserId = auth.currentUser?.uid;
+  if (!currentUserId || !targetUserId) return;
+
+  try {
+    const currentUserRef = doc(db, 'users', currentUserId);
+    const targetUserRef = doc(db, 'users', targetUserId);
+
+    await updateDoc(currentUserRef, {
+      following: arrayRemove(targetUserId),
+    });
+
+    await updateDoc(targetUserRef, {
+      followers: arrayRemove(currentUserId),
+      pendingFollowers: arrayRemove(currentUserId), // Clean up pending if exists
+    });
+
+    console.log('✅ Unfollowed user');
+  } catch (error) {
+    console.error('❌ Error unfollowing user:', error);
+  }
+};
+
+// set privacy
+export const setPrivacy = async (isPrivate) => {
+  const currentUserId = auth.currentUser?.uid;
+  if (!currentUserId) return;
+
+  try {
+    const userRef = doc(db, 'users', currentUserId);
+    await updateDoc(userRef, {
+      privacy: isPrivate ? 'private' : 'public',
+    });
+
+    console.log(`✅ Privacy set to ${isPrivate ? 'private' : 'public'}`);
+  } catch (error) {
+    console.error('❌ Error setting privacy:', error);
+  }
+};
+
+// approve follower
+export const approveFollower = async (followerId) => {
+  const currentUserId = auth.currentUser?.uid;
+  if (!currentUserId || !followerId) return;
+
+  try {
+    const userRef = doc(db, 'users', currentUserId);
+    const followerUserRef = doc(db, 'users', followerId);
+
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+
+    const userData = userSnap.data();
+    const pendingFollowers = userData.pendingFollowers || [];
+
+    if (!pendingFollowers.includes(followerId)) return;
+
+    await updateDoc(userRef, {
+      followers: arrayUnion(followerId),
+      pendingFollowers: arrayRemove(followerId),
+    });
+
+    await updateDoc(followerUserRef, {
+      following: arrayUnion(currentUserId),
+    });
+
+    console.log('✅ Approved follower');
+  } catch (error) {
+    console.error('❌ Error approving follower:', error);
+  }
+};
+
+// Fetch followers' profile data (emails + uids)
+export const getFollowers = async (uid) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return [];
+
+    const data = userSnap.data();
+    const followerIds = data.followers || [];
+
+    // Map each follower UID to their profile (email & uid)
+    const followerProfiles = await Promise.all(
+      followerIds.map(async (followerId) => {
+        const followerRef = doc(db, 'users', followerId);
+        const followerSnap = await getDoc(followerRef);
+        if (followerSnap.exists()) {
+          const followerData = followerSnap.data();
+          return { uid: followerId, email: followerData.email || '' };
+        }
+        return null;
+      })
+    );
+
+    // Filter out any nulls (if some followers don't exist)
+    return followerProfiles.filter(profile => profile !== null);
+  } catch (error) {
+    console.error('❌ Error fetching followers:', error);
+    return [];
+  }
+};
+
+// Fetch following users' profile data (emails + uids)
+export const getFollowing = async (uid) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return [];
+
+    const data = userSnap.data();
+    const followingIds = data.following || [];
+
+    const followingProfiles = await Promise.all(
+      followingIds.map(async (followingId) => {
+        const followingRef = doc(db, 'users', followingId);
+        const followingSnap = await getDoc(followingRef);
+        if (followingSnap.exists()) {
+          const followingData = followingSnap.data();
+          return { uid: followingId, email: followingData.email || '' };
+        }
+        return null;
+      })
+    );
+
+    return followingProfiles.filter(profile => profile !== null);
+  } catch (error) {
+    console.error('❌ Error fetching following:', error);
+    return [];
+  }
+};
+
+// output for above 2 functions shd be 
+// [
+//   { uid: 'userId1', email: 'email1@example.com' },
+//   { uid: 'userId2', email: 'email2@example.com' },
+//   ...
+// ]
+
+export const getPendingFollowers = async (uid) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return [];
+
+    const data = userSnap.data();
+    const pendingFollowerIds = data.pendingFollowers || [];
+
+    const pendingProfiles = await Promise.all(
+      pendingFollowerIds.map(async (followerId) => {
+        const followerRef = doc(db, 'users', followerId);
+        const followerSnap = await getDoc(followerRef);
+        if (followerSnap.exists()) {
+          const followerData = followerSnap.data();
+          return { uid: followerId, email: followerData.email || '' };
+        }
+        return null;
+      })
+    );
+
+    return pendingProfiles.filter(profile => profile !== null);
+  } catch (error) {
+    console.error('❌ Error fetching pending followers:', error);
+    return [];
+  }
+};
