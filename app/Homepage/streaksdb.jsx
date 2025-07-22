@@ -3,8 +3,11 @@ import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { getTasks } from '../../utils/streakstoragedb';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const TOTAL_DAYS = 21;
+
+
 
 const StreakCard = ({ name, streak }) => {
   const progress = (streak / TOTAL_DAYS) * 100;
@@ -13,7 +16,12 @@ const StreakCard = ({ name, streak }) => {
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.name}>{name}</Text>
-        <Text style={styles.streak}>Streak: {streak} days</Text>
+        {/* <Text style={styles.streak}>Streak: {streak} days</Text> */}
+        <View style={styles.streakBadge}> 
+          <MaterialCommunityIcons name="fire" size={18} color="#ff9800" />
+          <Text style={{color: 'ff9800'}}> Streak: {streak} days</Text>
+
+        </View>
       </View>
       <View style={styles.progressBar}>
         <View style={[styles.progress, { width: `${progress}%` }]} />
@@ -51,6 +59,8 @@ const Streaks = () => {
 };
 
 export default Streaks;
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -96,5 +106,11 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 4,
     color: '#555',
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    backgroundColor: '#fff3e0',
+    borderRadius: 12,
+    padding: 4,
   },
 });

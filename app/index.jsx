@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 
 import { Text, TextInput, Button } from 'react-native-paper';
 
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../utils/firebase'; // Import your Firebase configuration
 import { collection, doc, setDoc } from 'firebase/firestore'; // Import Firestore functions
 
@@ -27,21 +27,21 @@ export default function AuthScreen() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  //this is supposed to maintain auth state across app restarts 
-  //but idk if it works lol
-  //import { onAuthStateChanged } from 'firebase/auth';
-  // useEffect(() => { 
-  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
-  //     setUser(user);
-  //     setLoading(false);
-  //     if (user) {
-  //       router.push('/main');  // navigate programmatically
-  //     } else {
-  //       router.push('/index');     // navigate programmatically
-  //     }
-  //   });
-  //   return unsubscribe;
-  // }, []);
+  useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // User is logged in (including after reload)
+      console.log("User is logged in:", user.email);
+      router.replace('/Homepage/maindb'); // Redirect to main screen
+    } else {
+      // User is logged out
+      setUserData(null);
+      router.replace('/'); // Redirect to login
+    }
+  });
+
+  return unsubscribe;
+}, []);
 
 
   const [isSignUp, setIsSignUp] = useState(true); //handle logic for sign up or sign in 

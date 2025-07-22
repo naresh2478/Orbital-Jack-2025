@@ -12,7 +12,12 @@ const _layout = () => {
         headerShown: false,
         tabBarActiveTintColor: "black",
         tabBarInactiveTintColor: "gray",
-      }}
+        tabBarStyle : {
+          backgroundColor: "white",
+          height: 60,
+          paddingBottom: 5,
+          paddingTop: 5,
+      }}}
     >
 
       <Tabs.Screen
