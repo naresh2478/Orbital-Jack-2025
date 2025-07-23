@@ -239,3 +239,27 @@ export const getUserProfile = async (uid) => {
   }
 };
 
+// remove a follower
+export const removeFollower = async (followerId) => {
+  const currentUserId = auth.currentUser?.uid;
+  if (!currentUserId || !followerId) return;
+
+  try {
+    const userRef = doc(db, 'users', currentUserId);
+    const followerRef = doc(db, 'users', followerId);
+
+    await updateDoc(userRef, {
+      followers: arrayRemove(followerId),
+    });
+
+    await updateDoc(followerRef, {
+      following: arrayRemove(currentUserId),
+    });
+
+    console.log('✅ Removed follower');
+  } catch (error) {
+    console.error('❌ Error removing follower:', error);
+  }
+};
+
+

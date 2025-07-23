@@ -129,6 +129,16 @@ const SocialScreen = () => {
                 )}
             />
             <Button title="Back to Profile" onPress={() => router.back()} />
+            {selectedProfile && (
+                <View style={styles.profileCard}>
+                    <Text style={styles.subHeader}>Profile</Text>
+                    <Text>Email: {selectedProfile.email}</Text>
+                    <Text>Total Elevation: {selectedProfile.totalElevation}</Text>
+                    <Text>Mountains Conquered: {selectedProfile.conquered}</Text>
+                    <Text>Current Mountain: {selectedProfile.currentMountain}</Text>
+                    <Button title="Close Profile" onPress={() => setSelectedProfile(null)} />
+                    </View>
+                )}
         </View>
     );
 };
