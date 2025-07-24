@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import SakuraSeason from '../../assets/mountain3.png';
 import NightfallPeak from '../../assets/mountain4.png';
 import SkiMountain from '../../assets/mountain5.png';
 
+import * as Font from 'expo-font';
+
 
 import avatar from '../../assets/AvatarClimber.png';
 import { MOUNTAINS } from '../../utils/constants';  
@@ -29,19 +31,20 @@ const MAX_ELEVATION = 100;
 
 // Avatar positions mapped per 10m interval
 const positions = {
-  0:   { top: 480, left: 10 },
-  10:  { top: 430, left: 40 },
-  20:  { top: 380, left: 70 },
-  30:  { top: 330, left: 100 },
-  40:  { top: 280, left: 130 },
-  50:  { top: 230, left: 160 }, // ✅ shifted to your red circle
-  60:  { top: 180, left: 190 },
-  70:  { top: 130, left: 220 },
-  80:  { top: 80, left: 250 },
-  90:  { top: 40, left: 280 },
-  100: { top: 10, left: 310 },
+  0:   { top: 613, left: 6 },
+  10:  { top: 577, left: 42 },
+  20:  { top: 527, left: 62 },
+  30:  { top: 477, left: 82 },
+  40:  { top: 434, left: 111 },
+  50:  { top: 362, left: 142 }, // ✅ shifted to your red circle
+  60:  { top: 310, left: 170 },
+  70:  { top: 288, left: 183 },
+  80:  { top: 240, left: 207 },
+  90:  { top: 170, left: 242 },
+  100: { top: 100, left: 310 },
 };
 
+//map mountain names to png names
 const mountainImages = {
   'Summer Hill': SummerHill,
   'Fall Peak': FallPeak,
@@ -50,9 +53,17 @@ const mountainImages = {
   'Ski Mountain': SkiMountain,
 };
 
+//for loading custom fonts
+// const fetchFonts = () => {
+//   return Font.loadAsync({
+//     'PixelFont': require('../../assets/PressStart2P-Regular.ttf'),
+//   });
+// };
+
 
 // ✅ Local custom hook inside the same file
 const useElevation = () => {
+  
   const [elevation, setElevation] = useState(null);
   const [currentMountain, setCurrentMountain] = useState(''); 
   const [loading, setLoading] = useState(true);
@@ -104,7 +115,27 @@ const useElevation = () => {
 };
 
 const Elevation = () => {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadFont = async () => {
+      await Font.loadAsync({
+        'PixelFont': require('../../assets/PressStart2P-Regular.ttf'),
+      });
+      setFontsLoaded(true);
+    };
+    loadFont();
+  }, []);
+  
   const { elevation, currentMountain, loading, error } = useElevation();
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={{ fontSize: 14 }}>Loading fonts...</Text>
+      </View>
+    );
+  }
 
   if (loading) return <Text style={styles.loading}>Loading...</Text>;
   if (error) return <Text style={styles.error}>Error: {error}</Text>;
@@ -126,8 +157,14 @@ const Elevation = () => {
       >
         <Text style={styles.title}>{currentMountain}</Text>
         <Text style={styles.elevationText}>{elevation}m / {peakHeight}m</Text>
-        
-
+        <Text
+              style={{
+                fontFamily: 'PixelFont',
+                fontSize: 12,
+                color: backgroundImage === FallPeak ? 'black' : '#FFD700',
+              }}>
+                Hello
+              </Text>
         <Image source={avatar} style={[styles.avatar, { top, left }]} />
         <Text style={styles.subtitle}>Complete tasks to climb the mountain!</Text>
       </ImageBackground>
