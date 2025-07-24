@@ -12,6 +12,7 @@ import {
     searchUserByEmail, followUser, unfollowUser,
     approveFollower, getUserProfile, removeFollower
 } from '../utils/socialstorage';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import emailIcon from '../assets/email.png';
 import elevationIcon from '../assets/elevationicon.png';
@@ -135,7 +136,7 @@ const UserProfile = () => {
     };
 
     const renderModalContent = () => {
-        
+
         let data = [];
         if (modalType === 'followers') data = followers;
         else if (modalType === 'following') data = following;
@@ -147,7 +148,7 @@ const UserProfile = () => {
                 keyExtractor={(item) => item.uid}
                 renderItem={({ item }) => (
                     <View style={styles.modalItem}>
-                        <Text>{item.email}</Text>
+                        <Text style={styles.modalEmailText}>{item.email}</Text>
 
                         {modalType === 'followers' && (
                             <TouchableOpacity onPress={() => handleRemoveFollower(item.uid)}>
@@ -156,7 +157,7 @@ const UserProfile = () => {
                         )}
 
                         {modalType === 'following' && (
-                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <View style={styles.actionRow}>
                                 <TouchableOpacity onPress={() => handleViewProfile(item.uid)}>
                                     <Text style={styles.actionText}>View Profile</Text>
                                 </TouchableOpacity>
@@ -180,9 +181,9 @@ const UserProfile = () => {
         <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={100}  // tweak based on your navbar/header height
+            keyboardVerticalOffset={10}  // tweak based on your navbar/header height
         >
-            <ScrollView contentContainerStyle={styles.container}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
                 <TouchableOpacity onPress={() => router.push('/Homepage/maindb')}>
                     <Text style={styles.goBack}>⬅ Go Back</Text>
                 </TouchableOpacity>
@@ -239,27 +240,26 @@ const UserProfile = () => {
                     </TouchableOpacity>
 
                     {searchResult && (
-                        <View style={{ marginTop: 10 }}>
-                            <Text>{searchResult.email}</Text>
+                        <View style={styles.searchResultContainer}>
+                            <Text style={styles.searchResultEmail}>{searchResult.email}</Text>
 
                             {isFollowing ? (
-                                <Text style={{ color: 'gray' }}>Already Following</Text> // ✅
+                                <Text style={styles.searchResultStatus}>Already Following</Text>
                             ) : hasRequested ? (
                                 <TouchableOpacity onPress={() => handleCancelRequest(searchResult.uid)} style={styles.unfollowButton}>
-                                    <Text style={styles.unfollowText}>Cancel Request</Text> {/* ✅ */}
+                                    <Text style={styles.unfollowText}>Cancel Request</Text>
                                 </TouchableOpacity>
                             ) : (
                                 <TouchableOpacity onPress={async () => {
                                     await followUser(searchResult.uid);
-                                    fetchUserData(); // refresh status
+                                    fetchUserData();
                                     setHasRequested(true);
                                 }} style={styles.followButton}>
-                                    <Text style={styles.followText}>Follow</Text> {/* ✅ */}
+                                    <Text style={styles.followText}>Follow</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
                     )}
-
 
                 </View>
 
@@ -294,7 +294,7 @@ const UserProfile = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { padding: 20, backgroundColor: '#FAFAFA' },
+    container: { padding: 20, backgroundColor: '#FAFAFA', flexGrow: 1 },
     goBack: { fontSize: 16, color: '#007BFF', marginBottom: 20 },
     title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 30 },
     infoCard: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginVertical: 5,
     },
-    actionText: { fontSize: 16, fontWeight: 'bold' },
+    
     searchSection: { marginTop: 20 },
     input: {
         borderWidth: 1,
@@ -388,50 +388,50 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
     },
-    // profileOverlay: {
-    //     position: 'absolute',
-    //     top: 0,
-    //     bottom: 0,
-    //     left: 0,
-    //     right: 0,
-    //     backgroundColor: 'rgba(0,0,0,0.5)', // dimmed backdrop
-    //     justifyContent: 'center',
-    //     alignItems: 'center',
-    //     zIndex: 999,
-    // },
+    searchResultContainer: {
+        alignItems: 'center',
+        marginTop: 15,
+    },
 
-    // profilePopup: {
-    //     backgroundColor: 'white',
-    //     padding: 20,
-    //     borderRadius: 10,
-    //     width: '85%',
-    //     shadowColor: '#000',
-    //     shadowOffset: { width: 0, height: 2 },
-    //     shadowOpacity: 0.3,
-    //     shadowRadius: 10,
-    //     elevation: 10,
-    //     alignItems: 'center',
-    // },
+    searchResultEmail: {
+        fontSize: 18,
+        fontWeight: '600',
+        fontFamily: Platform.OS === 'ios' ? 'Avenir' : 'Roboto',
+        color: '#333',
+        marginBottom: 4,
+        textAlign: 'center',
+    },
 
-    // profileText: {
-    //     fontSize: 16,
-    //     marginBottom: 8,
-    //     textAlign: 'center',
-    // },
+    searchResultStatus: {
+        fontSize: 14,
+        color: '#888',
+        fontStyle: 'italic',
+        fontFamily: Platform.OS === 'ios' ? 'Avenir' : 'Roboto',
+        textAlign: 'center',
+    },
 
-    // backButton: {
-    //     marginTop: 15,
-    //     backgroundColor: '#007BFF',
-    //     paddingVertical: 10,
-    //     paddingHorizontal: 20,
-    //     borderRadius: 8,
-    // },
+    modalEmailText: {
+        fontSize: 18,
+        fontWeight: '600',
+        fontFamily: Platform.OS === 'ios' ? 'Avenir' : 'Roboto',
+        textAlign: 'center',
+        color: '#333',
+        marginBottom: 8,
+    },
 
-    // backButtonText: {
-    //     color: 'white',
-    //     fontWeight: 'bold',
-    //     fontSize: 16,
-    // },
+    actionRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    actionText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginHorizontal: 10, // spacing between "View Profile" and "Unfollow"
+    },
+
 });
 
 export default UserProfile;
