@@ -263,7 +263,7 @@ const UserProfile = () => {
 
                 </View>
 
-                <Modal visible={modalVisible} animationType="slide" transparent={false}>
+                {/* <Modal visible={modalVisible} animationType="slide" transparent={false}>
                     <SafeAreaView style={styles.modalContainer}>
                         <Text style={styles.modalTitle}>{modalType.charAt(0).toUpperCase() + modalType.slice(1)}</Text>
                         <View style={{ flex: 1, marginVertical: 10 }}>{renderModalContent()}</View>
@@ -286,7 +286,51 @@ const UserProfile = () => {
                             </TouchableOpacity>
                         </View>
                     </View>
+                </Modal> */}
+
+                <Modal visible={modalVisible} animationType="slide" transparent={false}>
+                    <SafeAreaView style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>
+                            {modalType.charAt(0).toUpperCase() + modalType.slice(1)}
+                        </Text>
+
+                        <View style={{ flex: 1, marginVertical: 10 }}>
+                            {renderModalContent()}
+
+                            {/* ✅ Embedded floating profile popup */}
+                            {selectedProfile && (
+                                <View style={styles.popupOverlay}>
+                                    <View style={styles.popupCard}>
+                                        <Text style={styles.modalTitle}>User Profile</Text>
+                                        <Text>Email: {selectedProfile?.email}</Text>
+                                        <Text>Total Elevation: {selectedProfile?.totalElevation || 0} m</Text>
+                                        <Text>
+                                            Mountains Conquered:{' '}
+                                            {selectedProfile?.conqueredMountains?.join(', ') || 'None'}
+                                        </Text>
+                                        <Text>
+                                            Current Mountain: {selectedProfile?.currentMountain || 'None'}
+                                        </Text>
+                                        <TouchableOpacity
+                                            onPress={() => setSelectedProfile(null)}
+                                            style={{ marginTop: 20 }}
+                                        >
+                                            <Text style={styles.closeText}>Close</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => setModalVisible(false)}
+                            style={{ alignSelf: 'center', marginVertical: 20 }}
+                        >
+                            <Text style={styles.closeText}>Close</Text>
+                        </TouchableOpacity>
+                    </SafeAreaView>
                 </Modal>
+
 
             </ScrollView>
         </KeyboardAvoidingView>
@@ -319,7 +363,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginVertical: 5,
     },
-    
+
     searchSection: { marginTop: 20 },
     input: {
         borderWidth: 1,
@@ -360,12 +404,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+
     profileModalContent: {
         backgroundColor: 'white',
         padding: 20,
         borderRadius: 10,
         width: '80%',
     },
+
+
     followButton: {
         marginTop: 10,
         backgroundColor: '#007BFF',
@@ -430,6 +477,25 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginHorizontal: 10, // spacing between "View Profile" and "Unfollow"
+    },
+    popupOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 999, // make sure it's on top
+    },
+
+    popupCard: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        width: '80%',
+        elevation: 10,
     },
 
 });
