@@ -20,31 +20,26 @@ import SkiMountain from '../../assets/mountain5.png';
 
 import * as Font from 'expo-font';
 
-
 import avatar from '../../assets/AvatarClimber.png';
-import { MOUNTAINS } from '../../utils/constants';  
-import { fromUnixTime } from 'date-fns';
+import { MOUNTAINS } from '../../utils/constants';
 
 const screenWidth = Dimensions.get('window').width;
 
-const MAX_ELEVATION = 100;
-
-// Avatar positions mapped per 10m interval
+// Reference avatar positions for a 100m mountain
 const positions = {
-  0:   { top: 613, left: 6 },
-  10:  { top: 577, left: 42 },
-  20:  { top: 527, left: 62 },
-  30:  { top: 477, left: 82 },
-  40:  { top: 434, left: 111 },
-  50:  { top: 362, left: 142 }, // ✅ shifted to your red circle
-  60:  { top: 310, left: 170 },
-  70:  { top: 288, left: 183 },
-  80:  { top: 240, left: 207 },
-  90:  { top: 170, left: 242 },
-  100: { top: 100, left: 310 },
+  0: { top: 600, left: 30 },
+  10: { top: 567, left: 52 },
+  20: { top: 519, left: 77 },
+  30: { top: 472, left: 102 },
+  40: { top: 423, left: 125 },
+  50: { top: 352, left: 162 },
+  60: { top: 304, left: 185 },
+  70: { top: 278, left: 197 },
+  80: { top: 231, left: 222 },
+  90: { top: 161, left: 257 },
+  100: { top: 65, left: 354 },
 };
 
-//map mountain names to png names
 const mountainImages = {
   'Summer Hill': SummerHill,
   'Fall Peak': FallPeak,
@@ -53,19 +48,10 @@ const mountainImages = {
   'Ski Mountain': SkiMountain,
 };
 
-//for loading custom fonts
-// const fetchFonts = () => {
-//   return Font.loadAsync({
-//     'PixelFont': require('../../assets/PressStart2P-Regular.ttf'),
-//   });
-// };
-
-
-// ✅ Local custom hook inside the same file
+// Local custom hook for fetching elevation
 const useElevation = () => {
-  
   const [elevation, setElevation] = useState(null);
-  const [currentMountain, setCurrentMountain] = useState(''); 
+  const [currentMountain, setCurrentMountain] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -93,16 +79,14 @@ const useElevation = () => {
             console.log('No user document found');
           }
         } catch (err) {
-              // Enhanced error handling
-              if (err.code === 'permission-denied') {
-                setError('Login expired - please sign in again');
-                router.push('/auth'); // Redirect if needed
-              } else {
-                setError('Failed to load elevation');
-              }
-              setElevation(0); // Reset on any error
-              console.error('Fetch elevation error:', err);
-            } finally {
+          if (err.code === 'permission-denied') {
+            setError('Login expired - please sign in again');
+          } else {
+            setError('Failed to load elevation');
+          }
+          setElevation(0);
+          console.error('Fetch elevation error:', err);
+        } finally {
           setLoading(false);
         }
       };
@@ -116,6 +100,7 @@ const useElevation = () => {
 
 const Elevation = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const { elevation, currentMountain, loading, error } = useElevation();
 
   useEffect(() => {
     const loadFont = async () => {
@@ -126,8 +111,6 @@ const Elevation = () => {
     };
     loadFont();
   }, []);
-  
-  const { elevation, currentMountain, loading, error } = useElevation();
 
   if (!fontsLoaded) {
     return (
@@ -140,32 +123,46 @@ const Elevation = () => {
   if (loading) return <Text style={styles.loading}>Loading...</Text>;
   if (error) return <Text style={styles.error}>Error: {error}</Text>;
 
-  const current = Math.min(Math.floor(elevation / 10) * 10, 100);
-  const { top, left } = positions[current] || positions[0];
-
   const currentMountainObj = MOUNTAINS.find(m => m.name === currentMountain);
   const peakHeight = currentMountainObj ? currentMountainObj.peak : 100;
+  const backgroundImage = mountainImages[currentMountain];
 
-  const backgroundImage = mountainImages[currentMountain]; 
+  // ✅ Interpolate avatar position dynamically
+  const basePeak = 100; // reference peak height
+  const baseStep = 10;
+
+  const currentElevation = Math.min(elevation, peakHeight);
+  const normalizedElevation = (currentElevation / peakHeight) * basePeak;
+
+  const lower = Math.floor(normalizedElevation / baseStep) * baseStep;
+  const upper = Math.min(lower + baseStep, basePeak);
+
+  const lowerPos = positions[lower] || positions[0];
+  const upperPos = positions[upper] || lowerPos;
+
+  const ratio = (normalizedElevation - lower) / baseStep;
+  const interpolatedTop = lowerPos.top + (upperPos.top - lowerPos.top) * ratio;
+  const interpolatedLeft = lowerPos.left + (upperPos.left - lowerPos.left) * ratio;
 
   return (
     <SafeAreaView style={styles.container}>
-      <ImageBackground
-        source={backgroundImage}
-        style={styles.background}
-        resizeMode="contain"
-      >
+      <ImageBackground source={backgroundImage} style={styles.background} resizeMode="contain">
         <Text style={styles.title}>{currentMountain}</Text>
-        <Text style={styles.elevationText}>{elevation}m / {peakHeight}m</Text>
-        <Text
-              style={{
-                fontFamily: 'PixelFont',
-                fontSize: 12,
-                color: backgroundImage === FallPeak ? 'black' : '#FFD700',
-              }}>
-                Hello
-              </Text>
-        <Image source={avatar} style={[styles.avatar, { top, left }]} />
+        <Text style={styles.title}>{peakHeight}m</Text>
+
+        <View style={[styles.avatarContainer, { top: interpolatedTop, left: interpolatedLeft }]}>
+          <Text
+            style={{
+              fontFamily: 'PixelFont',
+              fontSize: 12,
+              color: backgroundImage === FallPeak ? 'black' : '#FFD700',
+            }}
+          >
+            {elevation}m
+          </Text>
+          <Image source={avatar} style={[styles.avatar]} />
+        </View>
+
         <Text style={styles.subtitle}>Complete tasks to climb the mountain!</Text>
       </ImageBackground>
     </SafeAreaView>
@@ -175,6 +172,11 @@ const Elevation = () => {
 export default Elevation;
 
 const styles = StyleSheet.create({
+  avatarContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#87CEEB', // sky blue
@@ -191,15 +193,15 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.05 }],
   },
   title: {
-  fontSize: 24,
+  fontFamily: 'PixelFont',
+  fontSize: 15,
   fontWeight: 'bold',
-  color: '#fff',
+  color: '#FFD700',
   top: '40',
 
-  paddingVertical: 8,
-  paddingHorizontal: 12,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent black background
-  borderRadius: 8,
+  paddingVertical: 6,
+  paddingHorizontal: 8,
+  backgroundColor: 'rgba(0, 0, 0, 1)', // semi-transparent black background
 },
   elevationText: {
     fontSize: 30,
@@ -215,6 +217,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   avatar: {
+    marginTop: 10,
     position: 'absolute',
     width: 80,
     height: 80,
