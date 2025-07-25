@@ -135,7 +135,7 @@ export default function AuthScreen() {
 
             <Button mode = "contained" 
               onPress={isSignUp ? handleSignUp : handleLogin}
-              style={{ backgroundColor: '#1cb03b', marginTop: 10, marginBottom: 10 }}> {isSignUp ? "Sign Up" : "Log In"} </Button>
+              style={{ backgroundColor: '#3B82F6', marginTop: 10, marginBottom: 10 }}> {isSignUp ? "Sign Up" : "Log In"} </Button>
 
             <Button mode = "text" 
             labelStyle={{ color: '#000000' }}
