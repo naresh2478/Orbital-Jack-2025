@@ -281,7 +281,7 @@ async function scheduleNotificationsOnce() {
           >
             <ScrollView contentContainerStyle={styles.container}>
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
-                    <TouchableOpacity onPress={() => router.push('/userprofile')}>
+                    <TouchableOpacity onPress={() => router.push('/updateduserprofile')}>
                       <Image
                       source={profileIcon}
                       style={{ width: 30, height: 30 }}
