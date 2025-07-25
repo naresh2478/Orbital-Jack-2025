@@ -37,7 +37,8 @@ import {
   Text, TextInput, Button,  
   Card, Checkbox, IconButton, useTheme
 } from 'react-native-paper';
-import profileIcon from '../../assets/profileicon.jpg';
+
+import profileIcon1 from '../../assets/profileicon-nobg.png';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
@@ -293,12 +294,18 @@ async function scheduleNotificationsOnce() {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
           >
             <ScrollView contentContainerStyle={styles.container}>
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 5 }}>
-                    <TouchableOpacity onPress={() => router.push('/updateduserprofile')}>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 2 }}>
+                    <TouchableOpacity onPress={() => router.push('/updateduserprofile')}
+                       style={{  alignItems: 'center'}}
+                      >
+                      
                       <Image
-                      source={profileIcon}
-                      style={{ width: 40, height: 40, borderRadius: 12}}
+                      source={profileIcon1}
+                      style={{ width: 40, height: 40, borderRadius: 6, backgroundColor: 'transparent', 
+                        marginBottom: '-5'
+                      }}
                       />
+                      <Text>Profile</Text>
                       </TouchableOpacity>
                   </View>
               <Image source={Logo} style={styles.logo} />
@@ -459,8 +466,9 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 8,
+    marginBottom: 5,
     alignSelf: 'center',
+    backgroundColor: 'transparent',
   },
   quoteContainer: {
     marginBottom: 24,
