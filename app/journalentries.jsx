@@ -10,6 +10,7 @@ import {
 import { getJournalEntries } from '../utils/journalstorage';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
+import { Appbar } from 'react-native-paper';
 
 const JournalEntries = () => {
   const [entries, setEntries] = useState([]);
@@ -41,6 +42,9 @@ const JournalEntries = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity onPress={() => router.push('/Homepage/journaltab')} style={styles.backButton}>
+        <Text style={styles.backText}> Back</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Past Journal Entries</Text>
 
       <FlatList
@@ -49,10 +53,6 @@ const JournalEntries = () => {
         renderItem={renderItem}
         ListEmptyComponent={<Text style={styles.empty}>No entries yet.</Text>}
       />
-
-      <TouchableOpacity onPress={() => router.push('/Homepage/journaltab')} style={styles.backButton}>
-        <Text style={styles.backText}>⬅ Back</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -62,7 +62,10 @@ export default JournalEntries;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingBottom: 10,
+    paddingTop: 0,
     backgroundColor: '#FAFAFA',
   },
   title: {
@@ -97,7 +100,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   backText: {
     fontSize: 16,

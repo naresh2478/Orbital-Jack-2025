@@ -12,7 +12,7 @@ import {
     searchUserByEmail, followUser, unfollowUser,
     approveFollower, getUserProfile, removeFollower
 } from '../utils/socialstorage';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+//import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import emailIcon from '../assets/email.png';
 import elevationIcon from '../assets/elevationicon.png';
@@ -185,7 +185,7 @@ const UserProfile = () => {
         >
             <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
                 <TouchableOpacity onPress={() => router.push('/Homepage/maindb')}>
-                    <Text style={styles.goBack}>⬅ Go Back</Text>
+                    <Text style={styles.goBack}>Back</Text>
                 </TouchableOpacity>
 
                 <Text style={styles.title}>User Profile</Text>

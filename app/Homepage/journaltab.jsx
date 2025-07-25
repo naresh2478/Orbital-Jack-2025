@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: '#007BFF',
     padding: 14,
-    borderRadius: 8,
+    borderRadius: 12,
     marginTop: 10,
     alignItems: 'center',
   },
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   viewButton: {
     padding: 14,
-    borderRadius: 8,
+    borderRadius: 12,
     marginTop: 20,
     borderColor: '#007BFF',
     borderWidth: 2,
