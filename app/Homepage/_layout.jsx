@@ -67,7 +67,7 @@ const _layout = () => {
           tabBarIcon: ({ color }) => (
             <Image
               source={journalIcon}
-              style={{ width: 24, height: 24, tintColor: color }}
+              style={{ width: 22, height: 22, tintColor: color }}
             />
           ),
         }}

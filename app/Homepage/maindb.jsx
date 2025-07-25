@@ -12,7 +12,6 @@ import {
   Platform,
   Image,
   Switch
-  
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
@@ -38,7 +37,8 @@ import {
   Text, TextInput, Button,  
   Card, Checkbox, IconButton, useTheme
 } from 'react-native-paper';
-import profileIcon from '../../assets/profileicon.jpg';
+
+import profileIcon1 from '../../assets/profileicon-nobg.png';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
@@ -50,9 +50,23 @@ const Home = () => {
   const [adding, setAdding] = useState(false);
   const [newTask, setNewTask] = useState('');
 
+  const [quote, setQuote] = useState(null); //Quote function
+
   const theme = useTheme();
 
   const router = useRouter(); //for logout routing
+
+  useEffect(() => {
+    // Fetch motivational quote once on mount
+    fetch('https://zenquotes.io/api/random')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          setQuote(data[0]);
+        }
+      })
+      .catch(err => console.error('Quote fetch error:', err));
+  }, []);
 
   
   // Load tasks and set completed map on mount
@@ -280,15 +294,28 @@ async function scheduleNotificationsOnce() {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
           >
             <ScrollView contentContainerStyle={styles.container}>
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
-                    <TouchableOpacity onPress={() => router.push('/updateduserprofile')}>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 2 }}>
+                    <TouchableOpacity onPress={() => router.push('/updateduserprofile')}
+                       style={{  alignItems: 'center'}}
+                      >
+                      
                       <Image
-                      source={profileIcon}
-                      style={{ width: 30, height: 30 }}
+                      source={profileIcon1}
+                      style={{ width: 40, height: 40, borderRadius: 6, backgroundColor: 'transparent', 
+                        marginBottom: '-5'
+                      }}
                       />
+                      <Text>Profile</Text>
                       </TouchableOpacity>
                   </View>
               <Image source={Logo} style={styles.logo} />
+
+              {quote && (
+                <View style={styles.quoteContainer}>
+                  <Text style={styles.quoteText}>"{quote.q}"</Text>
+                  <Text style={styles.quoteAuthor}>- {quote.a}</Text>
+                </View>
+              )}
 
               <Card style={styles.card}>
                 <Card.Content>
@@ -433,14 +460,32 @@ export default Home;
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingVertical: 24,
+    paddingVertical: 14,
     paddingHorizontal: 16,
   },
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 24,
+    marginBottom: 5,
     alignSelf: 'center',
+    backgroundColor: 'transparent',
+  },
+  quoteContainer: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  quoteText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    color: '#4B5563', // cool gray
+    marginBottom: 6,
+  },
+  quoteAuthor: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '600',
+    color: '#6B7280',
   },
   card: {
     backgroundColor: '#FFFFFF',

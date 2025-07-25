@@ -67,7 +67,10 @@ export default JournalEntries;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingBottom: 10,
+    paddingTop: 0,
     backgroundColor: '#FAFAFA',
   },
   topBar: {
@@ -120,5 +123,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#999',
     marginTop: 40,
+  },
+  backButton: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  backText: {
+    fontSize: 16,
+    color: '#007BFF',
   },
 });

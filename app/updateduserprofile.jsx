@@ -12,7 +12,6 @@ import {
     searchUserByEmail, followUser, unfollowUser,
     approveFollower, getUserProfile, removeFollower
 } from '../utils/socialstorage';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import emailIcon from '../assets/email.png';
 import elevationIcon from '../assets/elevationicon.png';

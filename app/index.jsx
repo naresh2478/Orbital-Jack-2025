@@ -135,7 +135,7 @@ export default function AuthScreen() {
 
             <Button mode = "contained" 
               onPress={isSignUp ? handleSignUp : handleLogin}
-              style={{ backgroundColor: '#1cb03b', marginTop: 10, marginBottom: 10 }}> {isSignUp ? "Sign Up" : "Log In"} </Button>
+              style={{ backgroundColor: '#3B82F6', marginTop: 10, marginBottom: 10 }}> {isSignUp ? "Sign Up" : "Log In"} </Button>
 
             <Button mode = "text" 
             labelStyle={{ color: '#000000' }}
@@ -146,27 +146,6 @@ export default function AuthScreen() {
             </Button> 
 
         
-
-          <Button
-            onPress={() => {
-              
-              // For now, just navigate to the main screen 
-               router.push('/Homepage/maindb'); //router push vs replace
-            }}
-            style={({ pressed }) => [
-              {
-                backgroundColor: pressed ? '#ddd' : '#6200ee',
-                padding: 10,
-                borderRadius: 5,
-                marginTop: 10,
-              },
-            ]}
-            >
-              <Text style={{ color: '	#000000', fontWeight: 'bold'  }}>
-                To Home (For Testing)
-              </Text>
-                
-            </Button>
 
         </ScrollView>
       </KeyboardAvoidingView>
