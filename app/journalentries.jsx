@@ -6,10 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { getJournalEntries } from '../utils/journalstorage';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
+import backIcon from '../assets/back.png';
 
 const JournalEntries = () => {
   const [entries, setEntries] = useState([]);
@@ -41,6 +43,13 @@ const JournalEntries = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.push('/Homepage/journaltab')} style={styles.backButton}>
+          <Image source={backIcon} style={styles.backIcon} />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.title}>Past Journal Entries</Text>
 
       <FlatList
@@ -49,10 +58,6 @@ const JournalEntries = () => {
         renderItem={renderItem}
         ListEmptyComponent={<Text style={styles.empty}>No entries yet.</Text>}
       />
-
-      <TouchableOpacity onPress={() => router.push('/Homepage/journaltab')} style={styles.backButton}>
-        <Text style={styles.backText}>⬅ Back</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -64,6 +69,27 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#FAFAFA',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 5,
+    resizeMode: 'contain',
+    tintColor: '#007BFF',
+  },
+  backText: {
+    fontSize: 16,
+    color: '#007BFF',
+    fontWeight: '500',
   },
   title: {
     fontSize: 24,
@@ -94,13 +120,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#999',
     marginTop: 40,
-  },
-  backButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  backText: {
-    fontSize: 16,
-    color: '#007BFF',
   },
 });

@@ -259,20 +259,58 @@ export const searchUserByEmail = async (email) => {
 };
 
 // follow a user
+// export const followUser = async (targetUserId) => {
+//   const currentUserId = auth.currentUser?.uid;
+//   if (!currentUserId || !targetUserId) return;
+
+//   try {
+//     const targetUserRef = doc(db, 'users', targetUserId);
+
+//     await updateDoc(targetUserRef, {
+//       pendingFollowers: arrayUnion(currentUserId),
+//     });
+
+//     console.log('✅ Follow request sent');
+//   } catch (error) {
+//     console.error('❌ Error sending follow request:', error);
+//   }
+// };
+
 export const followUser = async (targetUserId) => {
   const currentUserId = auth.currentUser?.uid;
-  if (!currentUserId || !targetUserId) return;
+  if (!currentUserId || !targetUserId || currentUserId === targetUserId) return;
 
   try {
     const targetUserRef = doc(db, 'users', targetUserId);
+    const currentUserRef = doc(db, 'users', currentUserId);
 
-    await updateDoc(targetUserRef, {
-      pendingFollowers: arrayUnion(currentUserId),
-    });
+    const targetUserSnap = await getDoc(targetUserRef);
+    if (!targetUserSnap.exists()) {
+      console.error('❌ Target user not found');
+      return;
+    }
 
-    console.log('✅ Follow request sent');
+    const targetUserData = targetUserSnap.data();
+    const isPrivate = targetUserData.privacy === 'private';
+
+    if (isPrivate) {
+      // Send follow request
+      await updateDoc(targetUserRef, {
+        pendingFollowers: arrayUnion(currentUserId),
+      });
+      console.log('📩 Follow request sent to private account');
+    } else {
+      // Directly follow public account
+      await updateDoc(targetUserRef, {
+        followers: arrayUnion(currentUserId),
+      });
+      await updateDoc(currentUserRef, {
+        following: arrayUnion(targetUserId),
+      });
+      console.log('✅ Now following public account');
+    }
   } catch (error) {
-    console.error('❌ Error sending follow request:', error);
+    console.error('❌ Error processing followUser:', error);
   }
 };
 

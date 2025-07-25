@@ -18,6 +18,7 @@ import emailIcon from '../assets/email.png';
 import elevationIcon from '../assets/elevationicon.png';
 import conqueredIcon from '../assets/conquer.png';
 import currentMountainIcon from '../assets/MountainIcon.png';
+import backIcon from '../assets/back.png';
 
 const router = useRouter();
 
@@ -26,6 +27,7 @@ const UserProfile = () => {
     const [totalElevation, setTotalElevation] = useState(0);
     const [conqueredMountains, setConqueredMountains] = useState([]);
     const [currentMountain, setCurrentMountain] = useState('None');
+    const [privacy, setPrivacy] = useState('public');
 
     const [followers, setFollowers] = useState([]);
     const [following, setFollowing] = useState([]);
@@ -59,12 +61,30 @@ const UserProfile = () => {
             setTotalElevation(data.totalElevation || 0);
             setConqueredMountains(data.conqueredMountains || []);
             setCurrentMountain(data.currentMountain || 'None');
+            setPrivacy(data.privacy || 'public');
         }
 
         setFollowers(await getFollowers(uid));
         setFollowing(await getFollowing(uid));
         setPendingFollowers(await getPendingFollowers(uid));
     };
+
+    const togglePrivacy = async () => {
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+
+        const newPrivacy = privacy === 'public' ? 'private' : 'public';
+
+        try {
+            const userRef = doc(db, 'users', uid);
+            await updateDoc(userRef, { privacy: newPrivacy });
+            setPrivacy(newPrivacy);
+            console.log(`✅ Privacy updated to ${newPrivacy}`);
+        } catch (error) {
+            console.error('❌ Error updating privacy:', error);
+        }
+    };
+
 
     const handleUnfollow = async (targetUid) => {
         await unfollowUser(targetUid);
@@ -184,9 +204,15 @@ const UserProfile = () => {
             keyboardVerticalOffset={10}  // tweak based on your navbar/header height
         >
             <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
-                <TouchableOpacity onPress={() => router.push('/Homepage/maindb')}>
+                {/* <TouchableOpacity onPress={() => router.push('/Homepage/maindb')}>
                     <Text style={styles.goBack}>⬅ Go Back</Text>
+                </TouchableOpacity> */}
+
+                <TouchableOpacity onPress={() => router.push('/Homepage/maindb')} style={styles.goBackButton}>
+                    <Image source={backIcon} style={styles.backIcon} />
+                    <Text style={styles.goBackText}>Back</Text>
                 </TouchableOpacity>
+
 
                 <Text style={styles.title}>User Profile</Text>
 
@@ -195,6 +221,16 @@ const UserProfile = () => {
                     <Text style={styles.label}>Email:</Text>
                     <Text style={styles.info}>{email}</Text>
                 </View>
+
+                <TouchableOpacity style={styles.infoCard} onPress={togglePrivacy}>
+                    <Image source={require('../assets/lock.png')} style={styles.icon} />
+                    <Text style={styles.label}>Privacy:</Text>
+                    <Text style={[styles.info, { color: privacy === 'private' ? 'tomato' : 'green' }]}>
+                        {privacy === 'private' ? 'Private' : 'Public'}
+                    </Text>
+                    <Text style={styles.tapHint}>Tap to change</Text>
+                </TouchableOpacity>
+
 
                 <View style={styles.infoCard}>
                     <Image source={elevationIcon} style={styles.icon} />
@@ -241,20 +277,33 @@ const UserProfile = () => {
 
                     {searchResult && (
                         <View style={styles.searchResultContainer}>
-                            <Text style={styles.searchResultEmail}>{searchResult.email}</Text>
+                            <Text style={styles.searchResultEmail}>
+                                {searchResult.email}{' '}
+                                <Text style={styles.accountType}>
+                                    ({searchResult.privacy === 'private' ? 'private account' : 'public account'})
+                                </Text>
+                            </Text>
 
                             {isFollowing ? (
                                 <Text style={styles.searchResultStatus}>Already Following</Text>
                             ) : hasRequested ? (
-                                <TouchableOpacity onPress={() => handleCancelRequest(searchResult.uid)} style={styles.unfollowButton}>
+                                <TouchableOpacity
+                                    onPress={() => handleCancelRequest(searchResult.uid)}
+                                    style={styles.unfollowButton}
+                                >
                                     <Text style={styles.unfollowText}>Cancel Request</Text>
                                 </TouchableOpacity>
                             ) : (
-                                <TouchableOpacity onPress={async () => {
-                                    await followUser(searchResult.uid);
-                                    fetchUserData();
-                                    setHasRequested(true);
-                                }} style={styles.followButton}>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        await followUser(searchResult.uid);
+                                        fetchUserData();
+                                        //setHasRequested(true);
+                                        setHasRequested(searchResult.privacy === 'private');
+                                        setIsFollowing(searchResult.privacy === 'public');
+                                    }}
+                                    style={styles.followButton}
+                                >
                                     <Text style={styles.followText}>Follow</Text>
                                 </TouchableOpacity>
                             )}
@@ -333,7 +382,7 @@ const UserProfile = () => {
 
 
             </ScrollView>
-        </KeyboardAvoidingView>
+        </KeyboardAvoidingView >
     );
 };
 
@@ -497,6 +546,41 @@ const styles = StyleSheet.create({
         width: '80%',
         elevation: 10,
     },
+
+    tapHint: {
+        fontSize: 12,
+        color: '#888',
+        marginTop: 2,
+    },
+
+    accountType: {
+        fontSize: 13,
+        color: '#888',
+        fontStyle: 'italic',
+        fontWeight: '400',
+    },
+
+    goBackButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 10,
+    },
+
+    backIcon: {
+        width: 20,
+        height: 20,
+        resizeMode: 'contain',
+        tintColor: '#007BFF', // Blue
+        marginRight: 6,
+    },
+
+    goBackText: {
+        fontSize: 16,
+        color: '#007BFF',
+        fontWeight: '500',
+    },
+
+
 
 });
 
