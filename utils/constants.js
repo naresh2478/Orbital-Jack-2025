@@ -1,5 +1,7 @@
 export const MOUNTAINS = [
-  { name: 'Mountain A', peak: 100 },
-  { name: 'Mountain B', peak: 200 },
-  { name: 'Mountain C', peak: 500 },
+  { name: 'Summer Hill', peak: 100 },
+  { name: 'Fall Peak', peak: 200 },
+  { name: 'Sakura Season', peak: 300 },
+  { name: 'Nightfall Peak', peak: 400 },
+  { name: 'Ski Mountain', peak: 600 },
 ];

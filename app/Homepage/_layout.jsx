@@ -4,6 +4,7 @@ import { Image } from "react-native";
 import homeIcon from "../../assets/HomepageIcon.png";
 import streaksIcon from "../../assets/StreaksIcon.png";
 import elevationIcon from "../../assets/MountainIcon.png"; 
+import journalIcon from "../../assets/journalicon.png";
 
 const _layout = () => {
   return (
@@ -12,7 +13,12 @@ const _layout = () => {
         headerShown: false,
         tabBarActiveTintColor: "black",
         tabBarInactiveTintColor: "gray",
-      }}
+        tabBarStyle : {
+          backgroundColor: "white",
+          height: 60,
+          paddingBottom: 5,
+          paddingTop: 5,
+      }}}
     >
 
       <Tabs.Screen
@@ -48,6 +54,19 @@ const _layout = () => {
           tabBarIcon: ({ color }) => (
             <Image
               source={streaksIcon}
+              style={{ width: 24, height: 24, tintColor: color }}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="journaltab"
+        options={{
+          title: "Journal",
+          tabBarIcon: ({ color }) => (
+            <Image
+              source={journalIcon}
               style={{ width: 24, height: 24, tintColor: color }}
             />
           ),
