@@ -291,14 +291,14 @@ async function scheduleNotificationsOnce() {
               <Image source={Logo} style={styles.logo} />
 
 
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
+          {/* <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
             <TouchableOpacity onPress={() => router.push('/updateduserprofile')}>
               <Image
               source={profileIcon}
               style={{ width: 30, height: 30 }}
               />
               </TouchableOpacity>
-           </View>
+           </View> */}
 
               <Card style={styles.card}>
                 <Card.Content>
