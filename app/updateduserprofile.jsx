@@ -301,6 +301,7 @@ const UserProfile = () => {
                                         //setHasRequested(true);
                                         setHasRequested(searchResult.privacy === 'private');
                                         setIsFollowing(searchResult.privacy === 'public');
+                                       
                                     }}
                                     style={styles.followButton}
                                 >
