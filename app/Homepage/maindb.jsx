@@ -243,8 +243,8 @@ async function scheduleNotificationsOnce() {
   };
 
   const eveningTrigger = {
-    hour: 20, // 9 PM in 24-hour format
-    minute: 39,
+    hour: 21, // 9 PM in 24-hour format
+    minute: 0,
     repeats: true,
   };
 
@@ -317,6 +317,27 @@ async function scheduleNotificationsOnce() {
                 </View>
               )}
 
+
+
+          {/* <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
+            <TouchableOpacity onPress={() => router.push('/updateduserprofile')}>
+              <Image
+              source={profileIcon}
+              style={{ width: 30, height: 30 }}
+              />
+              </TouchableOpacity>
+           </View> */}
+
+
+          {/* <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
+            <TouchableOpacity onPress={() => router.push('/updateduserprofile')}>
+              <Image
+              source={profileIcon}
+              style={{ width: 30, height: 30 }}
+              />
+              </TouchableOpacity>
+           </View> */}
+
               <Card style={styles.card}>
                 <Card.Content>
                   <View style={styles.cardHeader}>
@@ -327,6 +348,7 @@ async function scheduleNotificationsOnce() {
                       </Text>
                     </View>
                   </View>
+
 
                   {tasks.length === 0 ? ( //Screen when no tasks are present
                     <View style={styles.emptyState}>

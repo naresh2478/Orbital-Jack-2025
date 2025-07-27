@@ -77,10 +77,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    paddingHorizontal: 10,
+    width: '100%',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
   },
   backIcon: {
     width: 20,

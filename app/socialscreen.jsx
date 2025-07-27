@@ -1,7 +1,7 @@
 // console.log('Socialscreen loaded from APP folder');
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native';
-import { searchUserByEmail, followUser, unfollowUser, approveFollower, getFollowers, getFollowing, getPendingFollowers } from '../utils/socialstorage.js';
+import { searchUserByEmail, followUser, unfollowUser, approveFollower, getFollowers, getFollowing, getPendingFollowers, getUserProfile } from '../utils/socialstorage.js';
 import { auth, db } from '../utils/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,8 @@ const SocialScreen = () => {
     const [followers, setFollowers] = useState([]);
     const [following, setFollowing] = useState([]);
     const [pendingFollowers, setPendingFollowers] = useState([]);
+    const [selectedProfile, setSelectedProfile] = useState(null);
+
 
     useEffect(() => {
         loadConnections();
@@ -64,6 +66,14 @@ const SocialScreen = () => {
         loadConnections();
     };
 
+    const handleViewProfile = async (userId) => {
+        const profile = await getUserProfile(userId);
+        if (profile) {
+            setSelectedProfile(profile);
+        }
+    };
+
+
     return (
         <View style={styles.container}>
             <Text style={styles.header}>Social</Text>
@@ -102,6 +112,7 @@ const SocialScreen = () => {
                 renderItem={({ item }) => (
                     <View style={styles.card}>
                         <Text>{item.email}</Text>
+                        <Button title="View Profile" onPress={() => handleViewProfile(item.uid)} />
                         <Button title="Unfollow" onPress={() => handleUnfollow(item.uid)} />
                     </View>
                 )}
@@ -118,6 +129,16 @@ const SocialScreen = () => {
                 )}
             />
             <Button title="Back to Profile" onPress={() => router.back()} />
+            {selectedProfile && (
+                <View style={styles.profileCard}>
+                    <Text style={styles.subHeader}>Profile</Text>
+                    <Text>Email: {selectedProfile.email}</Text>
+                    <Text>Total Elevation: {selectedProfile.totalElevation}</Text>
+                    <Text>Mountains Conquered: {selectedProfile.conquered}</Text>
+                    <Text>Current Mountain: {selectedProfile.currentMountain}</Text>
+                    <Button title="Close Profile" onPress={() => setSelectedProfile(null)} />
+                    </View>
+                )}
         </View>
     );
 };
@@ -139,6 +160,13 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginBottom: 10,
     },
+    profileCard: {
+    padding: 12,
+    backgroundColor: '#d0f0ff',
+    borderRadius: 8,
+    marginTop: 20,
+},
+
 });
 
 export default SocialScreen;
