@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { getTasks } from '../../utils/streakstoragedb';
@@ -7,8 +8,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 const TOTAL_DAYS = 21;
 
-
-
 const StreakCard = ({ name, streak }) => {
   const progress = (streak / TOTAL_DAYS) * 100;
 
@@ -16,11 +15,9 @@ const StreakCard = ({ name, streak }) => {
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.name}>{name}</Text>
-        {/* <Text style={styles.streak}>Streak: {streak} days</Text> */}
-        <View style={styles.streakBadge}> 
+        <View style={styles.streakBadge}>
           <MaterialCommunityIcons name="fire" size={18} color="#ff9800" />
-          <Text style={{color: 'ff9800'}}> Streak: {streak} days</Text>
-
+          <Text style={{ color: '#ff9800' }}> Streak: {streak} days</Text>
         </View>
       </View>
       <View style={styles.progressBar}>
@@ -34,9 +31,6 @@ const StreakCard = ({ name, streak }) => {
 const Streaks = () => {
   const [streaks, setStreaks] = useState([]);
 
-  //useFocusEffect is used to fetch streaks when the screen is focused (reloaded)
-  //calls getTasks to load full task array
-  //fetch streaks state
   useFocusEffect(
     useCallback(() => {
       const fetchStreaks = async () => {
@@ -48,24 +42,36 @@ const Streaks = () => {
   );
 
   return (
-     <SafeAreaView style={{ flex: 1 }}>
-    <ScrollView contentContainerStyle={styles.container}>
-      {streaks.map((task) => (
-        <StreakCard key={task.name} name={task.name} streak={task.streak} />
-      ))}
-    </ScrollView>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.heading}>
+          Complete a habit for 21 days in a row to earn a bonus 50m elevation!
+        </Text>
+
+        {streaks.map((task) => (
+          <StreakCard key={task.name} name={task.name} streak={task.streak} />
+        ))}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 export default Streaks;
 
-
-
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+    paddingTop: 12, // reduce this to bring content higher
     alignItems: 'center',
+  },
+  heading: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 24,
   },
   card: {
     width: '90%',
@@ -87,9 +93,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  streak: {
-    fontSize: 16,
-    color: '#555',
+  streakBadge: {
+    flexDirection: 'row',
+    backgroundColor: '#fff3e0',
+    borderRadius: 12,
+    padding: 4,
   },
   progressBar: {
     height: 10,
@@ -106,11 +114,5 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 4,
     color: '#555',
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    backgroundColor: '#fff3e0',
-    borderRadius: 12,
-    padding: 4,
   },
 });

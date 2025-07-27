@@ -40,26 +40,32 @@ const JournalTab = () => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Text style={styles.title}>Journal</Text>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.title}>Journal</Text>
 
-        <TextInput
-          style={styles.textBox}
-          multiline
-          placeholder="Add your thoughts..."
-          value={text}
-          onChangeText={setText}
-        />
+          <TextInput
+            style={styles.textBox}
+            multiline
+            placeholder="Add your thoughts..."
+            value={text}
+            onChangeText={setText}
+          />
 
-        <Text style={styles.counter}>{wordCount}/{MAX_WORDS}</Text>
+          <Text style={styles.counter}>{wordCount}/{MAX_WORDS}</Text>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveText}>Save Entry</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveText}>Save Entry</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.viewButton} onPress={() => router.push('../journalentries')}>
-          <Text style={styles.viewText}>View Past Journal Entries</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.viewButton} onPress={() => router.push('../journalentries')}>
+            <Text style={styles.viewText}>View Past Journal Entries</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
   );
@@ -70,8 +76,11 @@ export default JournalTab;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#FAFAFA',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 28,
@@ -120,3 +129,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

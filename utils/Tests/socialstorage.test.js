@@ -32,8 +32,8 @@ jest.mock('firebase/firestore', () => ({
   collection: jest.fn(),
   query: jest.fn(),
   where: jest.fn(),
-  arrayUnion: jest.fn(val => val),
-  arrayRemove: jest.fn(val => val)
+  arrayUnion: jest.fn(val => [val]),
+  arrayRemove: jest.fn(val => [val])
 }));
 
 jest.mock('../firebase', () => ({
@@ -62,20 +62,6 @@ describe('socialstorage backend functions', () => {
     expect(user).toEqual({ uid: 'uid123', email: 'a@b.com' });
   });
 
-  it('followUser should update target user pendingFollowers', async () => {
-    doc.mockReturnValue('mockDocRef');
-    await followUser('target123');
-    expect(updateDoc).toHaveBeenCalledWith('mockDocRef', {
-      pendingFollowers: ['mockUserId']
-    });
-  });
-
-  it('unfollowUser should update both users', async () => {
-    doc.mockReturnValue('mockDocRef');
-    await unfollowUser('target123');
-    expect(updateDoc).toHaveBeenCalledTimes(2);
-  });
-
   it('setPrivacy should set public or private', async () => {
     doc.mockReturnValue('mockDocRef');
     await setPrivacy(true);
@@ -88,6 +74,7 @@ describe('socialstorage backend functions', () => {
       exists: () => true,
       data: () => ({ pendingFollowers: ['follower123'] })
     });
+
     await approveFollower('follower123');
     expect(updateDoc).toHaveBeenCalledTimes(2);
   });
@@ -102,6 +89,7 @@ describe('socialstorage backend functions', () => {
         exists: () => true,
         data: () => ({ email: 'email1@example.com' })
       });
+
     const result = await getFollowers('uid');
     expect(result).toEqual([{ uid: 'user1', email: 'email1@example.com' }]);
   });
@@ -116,6 +104,7 @@ describe('socialstorage backend functions', () => {
         exists: () => true,
         data: () => ({ email: 'email2@example.com' })
       });
+
     const result = await getFollowing('uid');
     expect(result).toEqual([{ uid: 'user2', email: 'email2@example.com' }]);
   });
@@ -130,6 +119,7 @@ describe('socialstorage backend functions', () => {
         exists: () => true,
         data: () => ({ email: 'email3@example.com' })
       });
+
     const result = await getPendingFollowers('uid');
     expect(result).toEqual([{ uid: 'user3', email: 'email3@example.com' }]);
   });
@@ -140,13 +130,74 @@ describe('socialstorage backend functions', () => {
       id: 'user4',
       data: () => ({ email: 'email4@example.com' })
     });
+
     const result = await getUserProfile('user4');
     expect(result).toEqual({ uid: 'user4', email: 'email4@example.com' });
   });
 
   it('removeFollower updates both user and follower', async () => {
-    doc.mockReturnValue('mockDocRef');
+    doc
+      .mockReturnValueOnce('mockUserRef')
+      .mockReturnValueOnce('mockFollowerRef');
+
     await removeFollower('follower123');
     expect(updateDoc).toHaveBeenCalledTimes(2);
   });
 });
+
+it('followUser should send follow request to private user', async () => {
+  doc
+    .mockReturnValueOnce('mockTargetRef')  // targetUserRef
+    .mockReturnValueOnce('mockCurrentRef'); // currentUserRef
+
+  getDoc.mockResolvedValueOnce({
+    exists: () => true,
+    data: () => ({ privacy: 'private' })  // simulate private account
+  });
+
+  await followUser('target123');
+
+  expect(updateDoc).toHaveBeenCalledWith('mockTargetRef', {
+    pendingFollowers: ['mockUserId']
+  });
+});
+
+it('followUser should directly follow public user', async () => {
+  doc
+    .mockReturnValueOnce('mockTargetRef')   // targetUserRef
+    .mockReturnValueOnce('mockCurrentRef'); // currentUserRef
+
+  getDoc.mockResolvedValueOnce({
+    exists: () => true,
+    data: () => ({ privacy: 'public' })  // simulate public account
+  });
+
+  await followUser('target123');
+
+  expect(updateDoc).toHaveBeenCalledWith('mockTargetRef', {
+    followers: ['mockUserId']
+  });
+
+  expect(updateDoc).toHaveBeenCalledWith('mockCurrentRef', {
+    following: ['target123']
+  });
+});
+
+it('unfollowUser should remove follower and following (including pending)', async () => {
+  doc
+    .mockReturnValueOnce('mockCurrentRef')  // currentUserRef
+    .mockReturnValueOnce('mockTargetRef');  // targetUserRef
+
+  await unfollowUser('target123');
+
+  expect(updateDoc).toHaveBeenCalledWith('mockCurrentRef', {
+    following: ['target123']
+  });
+
+  expect(updateDoc).toHaveBeenCalledWith('mockTargetRef', {
+    followers: ['mockUserId'],
+    pendingFollowers: ['mockUserId']
+  });
+});
+
+

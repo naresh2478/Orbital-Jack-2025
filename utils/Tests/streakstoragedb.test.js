@@ -51,7 +51,7 @@ describe('streakstoragedb utilities', () => {
         await addTask('New Task');
 
         expect(doc).toHaveBeenCalled();
-        expect(setDoc).toHaveBeenCalled();
+        expect(setDoc).toHaveoneenCalled();
     });
 
     // ✅ Test deleteTask
