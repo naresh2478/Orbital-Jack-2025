@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     position: 'absolute',
-    bottom: -60, // or 20–40 depending on spacing
+    bottom: -60, 
     alignSelf: 'center',
   },
   avatar: {

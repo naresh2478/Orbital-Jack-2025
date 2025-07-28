@@ -7,8 +7,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 const TOTAL_DAYS = 21;
 
-
-
 const StreakCard = ({ name, streak }) => {
   const progress = (streak / TOTAL_DAYS) * 100;
 
@@ -16,11 +14,9 @@ const StreakCard = ({ name, streak }) => {
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.name}>{name}</Text>
-        {/* <Text style={styles.streak}>Streak: {streak} days</Text> */}
-        <View style={styles.streakBadge}> 
+        <View style={styles.streakBadge}>
           <MaterialCommunityIcons name="fire" size={18} color="#ff9800" />
-          <Text style={{color: 'ff9800'}}> Streak: {streak} days</Text>
-
+          <Text style={{ color: '#ff9800' }}> Streak: {streak} days</Text>
         </View>
       </View>
       <View style={styles.progressBar}>
@@ -34,9 +30,6 @@ const StreakCard = ({ name, streak }) => {
 const Streaks = () => {
   const [streaks, setStreaks] = useState([]);
 
-  //useFocusEffect is used to fetch streaks when the screen is focused (reloaded)
-  //calls getTasks to load full task array
-  //fetch streaks state
   useFocusEffect(
     useCallback(() => {
       const fetchStreaks = async () => {
@@ -48,24 +41,33 @@ const Streaks = () => {
   );
 
   return (
-     <SafeAreaView style={{ flex: 1 }}>
-    <ScrollView contentContainerStyle={styles.container}>
-      {streaks.map((task) => (
-        <StreakCard key={task.name} name={task.name} streak={task.streak} />
-      ))}
-    </ScrollView>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.heading}>
+          Complete a habit for 21 days in a row to earn 50m bonus elevation!
+        </Text>
+        {streaks.map((task) => (
+          <StreakCard key={task.name} name={task.name} streak={task.streak} />
+        ))}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 export default Streaks;
 
-
-
 const styles = StyleSheet.create({
   container: {
     padding: 16,
     alignItems: 'center',
+  },
+  heading: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
+    paddingHorizontal: 10,
   },
   card: {
     width: '90%',
@@ -86,10 +88,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  streak: {
-    fontSize: 16,
-    color: '#555',
   },
   progressBar: {
     height: 10,
