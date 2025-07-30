@@ -38,9 +38,8 @@ import {
   Text, TextInput, Button,  
   Card, Checkbox, IconButton, useTheme
 } from 'react-native-paper';
-import profileIcon from '../../assets/profileicon.jpg';
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
+import profileIcon from '../../assets/profileiconyes.jpg';
+
 
 
 
