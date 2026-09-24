@@ -1,23 +1,23 @@
-//this file handles auth only, not habit DB management
-
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   initializeAuth,
   getReactNativePersistence,
-  browserLocalPersistence,
 } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { initializeFirestore } from 'firebase/firestore';
+import Constants from 'expo-constants';
+
+const extra = Constants.expoConfig?.extra ?? {};
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCBnxh9Y2LgH3ZEYUGBExkostMzMneXGEo",
-  authDomain: "elevateyou-5fa71.firebaseapp.com",
-  projectId: "elevateyou-5fa71",
-  storageBucket: "elevateyou-5fa71.appspot.com",
-  messagingSenderId: "593749975804",
-  appId: "1:593749975804:web:a9d36731c83768f71ed79",
-  measurementId: "G-G18SBXPQ4G"
+  apiKey: extra.firebaseApiKey,
+  authDomain: extra.firebaseAuthDomain,
+  projectId: extra.firebaseProjectId,
+  storageBucket: extra.firebaseStorageBucket,
+  messagingSenderId: extra.firebaseMessagingSenderId,
+  appId: extra.firebaseAppId,
+  measurementId: extra.firebaseMeasurementId,
 };
 
 const app = initializeApp(firebaseConfig);

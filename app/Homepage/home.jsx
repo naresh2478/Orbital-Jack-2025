@@ -12,9 +12,9 @@ import { format } from 'date-fns';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../../utils/firebase';
 import * as taskAPI from '../../utils/streakstoragedb';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import * as Haptics from 'expo-haptics';
 import profileIcon1 from '../../assets/profileicon-nobg.png';
 import Logo from '../../assets/ElevateYouLogo.png';
 
@@ -55,7 +55,7 @@ const Home = () => {
       if (user?.uid) {
         loadTasks(user.uid);
         try { await taskAPI.setElevation(user.uid); } catch (e) {}
-        try { await scheduleNotificationsOnce(); } catch (e) {}
+        try { await scheduleNotifications(); } catch (e) {}
       }
     });
     return () => unsubscribe();
@@ -71,6 +71,7 @@ const Home = () => {
   };
 
   const toggleTask = async (taskName) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await taskAPI.toggleTaskCompletion(taskName);
     const updatedTasks = await taskAPI.getTasks();
     setTasks(updatedTasks);
@@ -367,12 +368,12 @@ const Home = () => {
 
 export default Home;
 
-async function scheduleNotificationsOnce() {
-  const hasScheduled = await AsyncStorage.getItem('notificationsScheduled');
-  if (hasScheduled) return;
+async function scheduleNotifications() {
   if (!Device.isDevice) return;
   const { status } = await Notifications.requestPermissionsAsync();
   if (status !== 'granted') return;
+  const existing = await Notifications.getAllScheduledNotificationsAsync();
+  if (existing.length >= 2) return;
   await Notifications.cancelAllScheduledNotificationsAsync();
   await Notifications.scheduleNotificationAsync({
     content: { title: '☀️ Good morning!', body: 'Time to complete your habits!', sound: true },
@@ -382,5 +383,4 @@ async function scheduleNotificationsOnce() {
     content: { title: '🌙 Good night!', body: 'Did you log your progress today?', sound: true },
     trigger: { hour: 21, minute: 0, repeats: true },
   });
-  await AsyncStorage.setItem('notificationsScheduled', 'true');
 }

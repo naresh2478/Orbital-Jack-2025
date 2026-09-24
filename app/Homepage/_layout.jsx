@@ -78,7 +78,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="maindb"
+        name="home"
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
@@ -87,7 +87,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="streaksdb"
+        name="streaks"
         options={{
           title: "Streaks",
           tabBarIcon: ({ color, focused }) => (
@@ -96,7 +96,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="journaltab"
+        name="journal"
         options={{
           title: "Journal",
           tabBarIcon: ({ color, focused }) => (

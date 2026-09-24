@@ -203,11 +203,7 @@ const UserProfile = () => {
             keyboardVerticalOffset={10}  // tweak based on your navbar/header height
         >
             <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
-                {/* <TouchableOpacity onPress={() => router.push('/Homepage/maindb')}>
-                    <Text style={styles.goBack}>⬅ Go Back</Text>
-                </TouchableOpacity> */}
-
-                <TouchableOpacity onPress={() => router.push('/Homepage/maindb')} style={styles.goBackButton}>
+                <TouchableOpacity onPress={() => router.push('/Homepage/home')} style={styles.goBackButton}>
                     <Image source={backIcon} style={styles.backIcon} />
                     <Text style={styles.goBackText}>Back</Text>
                 </TouchableOpacity>
