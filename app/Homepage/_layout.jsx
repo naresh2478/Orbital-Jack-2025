@@ -6,21 +6,27 @@ import streaksIcon from "../../assets/StreaksIcon.png";
 import elevationIcon from "../../assets/MountainIcon.png";
 import journalIcon from "../../assets/journalicon.png";
 
-const ACTIVE = "#6366F1";
-const INACTIVE = "#94A3B8";
+const ACTIVE = "#A78BFA";
+const INACTIVE = "#334155";
 
 function TabIcon({ source, color, focused, size = 24 }) {
   return (
-    <View style={{ alignItems: "center", justifyContent: "center" }}>
+    <View className="items-center justify-center">
       {focused && (
-        <View style={{
-          position: "absolute",
-          top: -8,
-          width: 20,
-          height: 3,
-          borderRadius: 2,
-          backgroundColor: ACTIVE,
-        }} />
+        <View
+          className="absolute rounded-full"
+          style={{
+            top: -8,
+            width: 24,
+            height: 3,
+            backgroundColor: ACTIVE,
+            shadowColor: ACTIVE,
+            shadowOpacity: 0.8,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 0 },
+            elevation: 6,
+          }}
+        />
       )}
       <Image
         source={source}
@@ -48,16 +54,17 @@ export default function TabLayout() {
           marginTop: 2,
         },
         tabBarStyle: {
-          backgroundColor: "white",
+          backgroundColor: "#0B1121",
           height: Platform.OS === "ios" ? 88 : 68,
           paddingTop: 8,
           paddingBottom: Platform.OS === "ios" ? 28 : 8,
-          borderTopWidth: 0,
-          shadowColor: "#000",
-          shadowOpacity: 0.08,
-          shadowOffset: { width: 0, height: -4 },
-          shadowRadius: 12,
-          elevation: 10,
+          borderTopWidth: 1,
+          borderTopColor: "rgba(255,255,255,0.04)",
+          shadowColor: "#7C3AED",
+          shadowOpacity: 0.15,
+          shadowOffset: { width: 0, height: -8 },
+          shadowRadius: 20,
+          elevation: 12,
         },
       }}
     >

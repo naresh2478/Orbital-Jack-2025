@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Keyboard,
-  Platform,
-  ScrollView,
+  View, Text, TextInput, TouchableOpacity, Alert,
+  KeyboardAvoidingView, TouchableWithoutFeedback,
+  Keyboard, Platform, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { addJournalEntry } from '../../utils/journalstorage';
 import { format } from 'date-fns';
@@ -42,66 +35,102 @@ const JournalTab = () => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={s.root}>
-        <LinearGradient colors={['#92400e', '#78350f', '#451a03']} style={s.headerGrad}>
-          <SafeAreaView edges={['top']} style={s.headerInner}>
-            <Text style={s.headerIcon}>📖</Text>
-            <Text style={s.headerTitle}>My Journal</Text>
-            <Text style={s.headerDate}>{today}</Text>
+      <View className="flex-1 bg-[#0B1121]">
+        {/* Header */}
+        <LinearGradient
+          colors={['#78350f', '#92400e', '#b45309']}
+          style={{ paddingBottom: 20, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
+        >
+          <SafeAreaView edges={['top']}>
+            <View className="items-center pt-2">
+              <Text className="text-4xl">📖</Text>
+              <Text className="text-[26px] font-extrabold text-amber-300 mt-1 tracking-tight">
+                My Journal
+              </Text>
+              <Text className="text-[13px] text-white/40 mt-1.5">{today}</Text>
+            </View>
           </SafeAreaView>
         </LinearGradient>
 
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
+          className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
         >
           <ScrollView
-            contentContainerStyle={s.scroll}
+            contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Book page */}
-            <View style={s.bookPage}>
-              <View style={s.bookSpine} />
-              <View style={s.pageContent}>
-                {/* Lined paper effect */}
-                {Array.from({ length: 14 }, (_, i) => (
-                  <View key={i} style={[s.line, { top: 52 + i * 28 }]} />
-                ))}
+            {/* Writing Card */}
+            <View className="bg-[#141D2B] rounded-2xl overflow-hidden border border-amber-900/20 mb-5">
+              {/* Card header */}
+              <View className="flex-row items-center px-4 pt-4 pb-2">
+                <MaterialCommunityIcons name="pencil-outline" size={16} color="#D97706" />
+                <Text className="text-xs text-amber-600 font-semibold ml-1.5 uppercase tracking-widest">
+                  New Entry
+                </Text>
+                <View className="flex-1" />
+                <Text className="text-xs text-slate-500 italic">
+                  {format(new Date(), 'MMM d, yyyy')}
+                </Text>
+              </View>
 
-                <Text style={s.dateStamp}>{format(new Date(), 'MMM d, yyyy')}</Text>
+              {/* Divider */}
+              <View className="h-px bg-white/[0.04] mx-4" />
 
-                <TextInput
-                  style={s.textInput}
-                  multiline
-                  placeholder="Dear journal..."
-                  placeholderTextColor="#C4A882"
-                  value={text}
-                  onChangeText={setText}
-                />
+              {/* Text Input */}
+              <TextInput
+                className="text-[17px] text-slate-200 px-4 pt-3 pb-2"
+                style={{
+                  minHeight: 280,
+                  lineHeight: 28,
+                  textAlignVertical: 'top',
+                  fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+                }}
+                multiline
+                placeholder="What's on your mind today..."
+                placeholderTextColor="#334155"
+                value={text}
+                onChangeText={setText}
+              />
 
-                <View style={s.counterRow}>
-                  <Text style={[s.counter, wordCount > MAX_WORDS && { color: '#DC2626' }]}>
-                    {wordCount}/{MAX_WORDS} words
-                  </Text>
-                </View>
+              {/* Word count */}
+              <View className="flex-row justify-end px-4 pb-3">
+                <Text
+                  className={`text-xs font-medium ${wordCount > MAX_WORDS ? 'text-red-400' : 'text-slate-600'}`}
+                >
+                  {wordCount}/{MAX_WORDS} words
+                </Text>
               </View>
             </View>
 
-            {/* Save button */}
-            <TouchableOpacity onPress={handleSave} activeOpacity={0.8}>
-              <LinearGradient colors={['#92400e', '#78350f']} style={s.saveBtn}>
-                <Text style={s.saveBtnText}>✍️  Save Entry</Text>
+            {/* Save Button */}
+            <TouchableOpacity onPress={handleSave} className="overflow-hidden rounded-2xl mb-3">
+              <LinearGradient
+                colors={['#92400e', '#b45309']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ paddingVertical: 16, alignItems: 'center', borderRadius: 16 }}
+              >
+                <View className="flex-row items-center">
+                  <MaterialCommunityIcons name="content-save-outline" size={18} color="#FDE68A" />
+                  <Text className="text-amber-200 text-base font-bold ml-2">Save Entry</Text>
+                </View>
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* View past entries */}
+            {/* View Past Entries */}
             <TouchableOpacity
-              style={s.viewBtn}
+              className="py-4 rounded-2xl items-center bg-amber-900/10 border border-amber-800/20"
               onPress={() => router.push('../journalentries')}
             >
-              <Text style={s.viewBtnText}>📚  View Past Entries</Text>
+              <View className="flex-row items-center">
+                <MaterialCommunityIcons name="book-open-variant" size={18} color="#D97706" />
+                <Text className="text-amber-600 text-[15px] font-semibold ml-2">
+                  View Past Entries
+                </Text>
+              </View>
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -111,109 +140,3 @@ const JournalTab = () => {
 };
 
 export default JournalTab;
-
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FDF6EC' },
-
-  headerGrad: {
-    paddingBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  headerInner: { alignItems: 'center', paddingTop: 8 },
-  headerIcon: { fontSize: 32 },
-  headerTitle: {
-    fontSize: 24, fontWeight: '800', color: '#FFD700',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    marginTop: 4,
-  },
-  headerDate: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
-
-  scroll: { padding: 20, paddingBottom: 40 },
-
-  bookPage: {
-    backgroundColor: '#FFF9F0',
-    borderRadius: 4,
-    marginBottom: 20,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    shadowColor: '#78350f',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 2, height: 4 },
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: '#E8D5B8',
-  },
-  bookSpine: {
-    width: 6,
-    backgroundColor: '#92400e',
-  },
-  pageContent: {
-    flex: 1,
-    padding: 20,
-    paddingTop: 16,
-    minHeight: 420,
-    position: 'relative',
-  },
-  line: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    height: 1,
-    backgroundColor: 'rgba(196,168,130,0.25)',
-  },
-  dateStamp: {
-    fontSize: 12,
-    color: '#A0845C',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    fontStyle: 'italic',
-    marginBottom: 12,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 17,
-    lineHeight: 28,
-    color: '#4A3728',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    textAlignVertical: 'top',
-    minHeight: 340,
-    paddingTop: 0,
-  },
-  counterRow: {
-    alignItems: 'flex-end',
-    marginTop: 8,
-  },
-  counter: {
-    fontSize: 12,
-    color: '#A0845C',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-  },
-
-  saveBtn: {
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  saveBtnText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-  },
-  viewBtn: {
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    backgroundColor: 'rgba(146,64,14,0.08)',
-    borderWidth: 1.5,
-    borderColor: '#C4A882',
-  },
-  viewBtnText: {
-    color: '#78350f',
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-  },
-});
