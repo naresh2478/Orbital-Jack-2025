@@ -4,12 +4,12 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   initializeAuth,
-  getReactNativePersistence
+  getReactNativePersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { initializeFirestore } from 'firebase/firestore';
 
-// Your Firebase config (unchanged)
 const firebaseConfig = {
   apiKey: "AIzaSyCBnxh9Y2LgH3ZEYUGBExkostMzMneXGEo",
   authDomain: "elevateyou-5fa71.firebaseapp.com",
@@ -20,13 +20,17 @@ const firebaseConfig = {
   measurementId: "G-G18SBXPQ4G"
 };
 
-// Initialize Firebase app
 const app = initializeApp(firebaseConfig);
 
-// ✅ Auth with AsyncStorage persistence
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
-});
+let auth;
+if (Platform.OS === 'web') {
+  auth = getAuth(app);
+} else {
+  const ReactNativeAsyncStorage = require('@react-native-async-storage/async-storage').default;
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+  });
+}
+export { auth };
 
-// ✅ Firestore (basic memory caching – Expo-safe)
 export const db = initializeFirestore(app, {});

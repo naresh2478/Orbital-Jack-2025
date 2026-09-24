@@ -208,13 +208,13 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("User is logged in:", user.email);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        console.log("User is logged in:", currentUser.email);
         router.replace('/Homepage/maindb');
       } else {
         setUser(null);
-        router.replace('/');
+        setLoading(false);
       }
     });
 

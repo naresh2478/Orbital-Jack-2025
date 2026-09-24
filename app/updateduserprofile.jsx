@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { auth, db } from '../utils/firebase';
 import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import {
     getFollowers, getFollowing, getPendingFollowers,

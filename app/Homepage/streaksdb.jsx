@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { getTasks } from '../../utils/streakstoragedb';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const TOTAL_DAYS = 21;
 

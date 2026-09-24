@@ -1,19 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Alert,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   ScrollView,
   View,
-  //Text,
   TouchableOpacity,
-  //TextInput,
   Platform,
   Image,
-  Switch
+  Switch,
+  Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { format } from 'date-fns';
+import Logo from '../../assets/ElevateYouLogo.png';
+import * as taskAPI from '../../utils/streakstoragedb';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '../../utils/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Text, TextInput, IconButton } from 'react-native-paper';
+import profileIcon1 from '../../assets/profileicon-nobg.png';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -23,597 +33,381 @@ Notifications.setNotificationHandler({
   }),
 });
 
-import * as Device from 'expo-device';
-import { useRouter } from 'expo-router';
-import { format } from 'date-fns';
-import Logo from '../../assets/ElevateYouLogo.png';
-import * as taskAPI from '../../utils/streakstoragedb'; // import the backend functions 
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from '../../utils/firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+const HABIT_COLORS = ['#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
+const { width: SW } = Dimensions.get('window');
 
-
-import { 
-  Text, TextInput, Button,  
-  Card, Checkbox, IconButton, useTheme
-} from 'react-native-paper';
-
-import profileIcon1 from '../../assets/profileicon-nobg.png';
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
-
-
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
 
 const Home = () => {
   const [tasks, setTasks] = useState([]);
   const [completed, setCompleted] = useState({});
   const [adding, setAdding] = useState(false);
   const [newTask, setNewTask] = useState('');
-
-  const [quote, setQuote] = useState(null); //Quote function
-
-  const theme = useTheme();
-
-  const router = useRouter(); //for logout routing
+  const [quote, setQuote] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
-    // Fetch motivational quote once on mount
     fetch('https://zenquotes.io/api/random')
       .then(res => res.json())
-      .then(data => {
-        if (data && data.length > 0) {
-          setQuote(data[0]);
-        }
-      })
-      .catch(err => console.error('Quote fetch error:', err));
+      .then(data => { if (data?.length > 0) setQuote(data[0]); })
+      .catch(() => {});
   }, []);
 
-  
-  // Load tasks and set completed map on mount
   useEffect(() => {
-    
-  const unsubscribe = onAuthStateChanged(auth, async (user) => {
-    if (user.uid) {
-      console.log('✅ Logged in as:', user.email);
-      loadTasks(user.uid); // only load tasks when user is authenticated
-      try {
-        await taskAPI.setElevation(user.uid); // Initialize elevation for new user
-      } catch (error) {
-        console.error('Error getting elevation:', error);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user?.uid) {
+        loadTasks(user.uid);
+        try { await taskAPI.setElevation(user.uid); } catch (e) {}
+        try { await scheduleNotificationsOnce(); } catch (e) {}
       }
-
-      try {
-            await scheduleNotificationsOnce();
-            console.log('✅ Notifications function called');
-          } catch (error) {
-            console.error('Notification scheduling failed:', error);
-          }//schedule notifications once when user logs in (happens once only)
-
-    } else {
-      console.log('❌ Not logged in');
-    }
-  });
-
-  return () => 
-    unsubscribe(); 
-  ;// cleanup listener on unmount
+    });
+    return () => unsubscribe();
   }, []);
 
-  
-  
-// Define loadTasks outside useEffect so it's accessible
-const loadTasks = async (uid) => {
-  const loadedTasks = await taskAPI.getTasks(uid);
-
-  setTasks(loadedTasks);
-
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const completedMap = {};
-  loadedTasks.forEach(task => {
-    completedMap[task.name] = task.lastCompleted === today;
-  });
-  setCompleted(completedMap);
-};
-
-  // Toggle task and reload tasks
-  const toggleTask = async (taskName) => {
-    console.log('Tapped task:', taskName);
-    await taskAPI.toggleTaskCompletion(taskName);
-
-    // Refresh
-    const updatedTasks = await taskAPI.getTasks();  //removed the argument
-    setTasks(updatedTasks);
-
+  const loadTasks = async () => {
+    const loadedTasks = await taskAPI.getTasks();
+    setTasks(loadedTasks);
     const today = format(new Date(), 'yyyy-MM-dd');
-    const completedMap = {};
-    updatedTasks.forEach(task => {
-      completedMap[task.name] = task.lastCompleted === today;
-    });
-    setCompleted(completedMap);
+    const map = {};
+    loadedTasks.forEach(t => { map[t.name] = t.lastCompleted === today; });
+    setCompleted(map);
+  };
 
-    // Update elevation after toggle
+  const toggleTask = async (taskName) => {
+    await taskAPI.toggleTaskCompletion(taskName);
+    const updatedTasks = await taskAPI.getTasks();
+    setTasks(updatedTasks);
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const map = {};
+    updatedTasks.forEach(t => { map[t.name] = t.lastCompleted === today; });
+    setCompleted(map);
     const uid = auth.currentUser?.uid;
-    try {
-      await taskAPI.setElevation(uid);
-    } catch (error) {
-      console.error('Error updating elevation:', error);
-    }
+    if (uid) try { await taskAPI.setElevation(uid); } catch (e) {}
   };
 
-  // Delete task locally and remotely
   const handleDelete = async (taskName) => {
-  const uid = auth.currentUser?.uid;
-  if (!uid) {
-    console.warn('No user signed in. Cannot delete task.');
-    return;
-  }
-
-  await taskAPI.deleteTask(taskName, uid);
-
-  try {
-      await taskAPI.setElevation(uid);
-      console.log('Elevation updated after toggling task');
-    } catch (error) {
-      console.error('Error updating elevation:', error);
-    }
-
-  // Update local tasks state after deletion
-  const updatedTasks = tasks.filter((t) => t.name !== taskName);
-  setTasks(updatedTasks);
-
-  const updatedCompleted = { ...completed };
-  delete updatedCompleted[taskName];
-  setCompleted(updatedCompleted);
-  console.log(`Task "${taskName}" deleted successfully.`);
-
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    await taskAPI.deleteTask(taskName, uid);
+    try { await taskAPI.setElevation(uid); } catch (e) {}
+    setTasks(prev => prev.filter(t => t.name !== taskName));
+    setCompleted(prev => { const c = { ...prev }; delete c[taskName]; return c; });
   };
 
-  // Add new task
   const handleAddTask = async () => {
-    console.log('Trying to add:', newTask);
-
-    try {
-    if (newTask.trim() !== '' && !tasks.find(t => t.name === newTask)) {
-      const uid = auth.currentUser?.uid;
-      console.log('Current UID:', uid); // Add this debug log
-      
-      if (!uid) {
-        console.warn('No user logged in!');
-        return;
-      }
-
-      await taskAPI.addTask(newTask, uid); 
-      console.log('Task added to Firestore');
-
-      const updatedTasks = await taskAPI.getTasks(uid);
-      setTasks(updatedTasks);
-
-      setCompleted({ ...completed, [newTask]: false });
-      setNewTask('');
-      setAdding(false);
-    }
-    } catch (error) {
-    console.error('Error adding task:', error);
-    }
+    if (!newTask.trim() || tasks.find(t => t.name === newTask)) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    await taskAPI.addTask(newTask, uid);
+    const updatedTasks = await taskAPI.getTasks(uid);
+    setTasks(updatedTasks);
+    setCompleted(prev => ({ ...prev, [newTask]: false }));
+    setNewTask('');
+    setAdding(false);
   };
 
-  //handle user logout
   const handleLogout = async () => {
     try {
-      const currentUser = auth.currentUser;
-      const userEmail = currentUser?.email;
-
       await signOut(auth);
-      router.push('/'); // Redirect to login screen
-      console.log(`Successfully logged out${userEmail ? ` as: ${userEmail}` : ''}`);
+      router.push('/');
     } catch (error) {
-      console.error('Logout error:', error);
       Alert.alert('Logout Error', error.message);
     }
   };
 
-//this still doesnt work, to test again
-async function scheduleNotificationsOnce() {
-  // Debug: Uncomment to force rescheduling during testing
-  // await AsyncStorage.removeItem('notificationsScheduled');
-
-  const hasScheduled = await AsyncStorage.getItem('notificationsScheduled');
-  if (hasScheduled) return;
-
-  if (!Device.isDevice) {
-    console.log("Notifications require a physical device");
-    return;
-  }
-
-  // 1. Verify permissions
-  const { status } = await Notifications.requestPermissionsAsync();
-  if (status !== 'granted') {
-    Alert.alert("Notifications blocked", "Enable them in settings");
-    return;
-  }
-
-  // 2. Clear existing notifications
-  await Notifications.cancelAllScheduledNotificationsAsync();
-
-  // 3. Schedule with timezone
-  const morningTrigger = {
-    hour: 9,
-    minute: 0,
-    repeats: true,
-  };
-
-  const eveningTrigger = {
-    hour: 21, // 9 PM in 24-hour format
-    minute: 0,
-    repeats: true,
-  };
-
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: '☀️ Good morning!',
-      body: 'Time to complete your habits!',
-      sound: true,
-    },
-    trigger: morningTrigger,
-  });
-
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: '🌙 Good night!',
-      body: "Did you log your progress today?",
-      sound: true,
-    },
-    trigger: eveningTrigger,
-  });
-
-  // 4. Verify and store flag
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  console.log("Scheduled notifications:", scheduled);
-
-  await AsyncStorage.setItem('notificationsScheduled', 'true');
-}
-
-//test notification function. Uncomment here and in the return statement to test
-// const triggerTestNotification = async () => {
-//   await Notifications.scheduleNotificationAsync({
-//     content: {
-//       title: 'TEST',
-//       body: 'This should appear immediately!',
-//       sound: 'default',
-//     },
-//     trigger: { seconds: 2 }, // Shows after 2 seconds
-//   });
-//   Alert.alert('Test scheduled', 'Notification should appear in 2 seconds (keep app in background)');
-// };
+  const doneCount = Object.values(completed).filter(Boolean).length;
+  const totalCount = tasks.length;
+  const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
   return (
-        <SafeAreaView edges={['right']} style={{ flex: 1, backgroundColor: theme.colors.background }}>
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
-          >
-            <ScrollView contentContainerStyle={styles.container}>
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 2 }}>
-                    <TouchableOpacity onPress={() => router.push('/updateduserprofile')}
-                       style={{  alignItems: 'center'}}
-                      >
-                      
-                      <Image
-                      source={profileIcon1}
-                      style={{ width: 40, height: 40, borderRadius: 6, backgroundColor: 'transparent', 
-                        marginBottom: '-5'
-                      }}
-                      />
-                      <Text>Profile</Text>
-                      </TouchableOpacity>
-                  </View>
-              <Image source={Logo} style={styles.logo} />
+    <View style={s.root}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-              {quote && (
-                <View style={styles.quoteContainer}>
-                  <Text style={styles.quoteText}>"{quote.q}"</Text>
-                  <Text style={styles.quoteAuthor}>- {quote.a}</Text>
-                </View>
-              )}
+        {/* Gradient Header */}
+        <LinearGradient colors={['#1e1b4b', '#312e81', '#4338ca']} style={s.headerGrad}>
+          <SafeAreaView edges={['top']} style={s.headerInner}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.greeting}>{getGreeting()} 👋</Text>
+              <Text style={s.dateText}>{format(new Date(), 'EEEE, MMM d')}</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/updateduserprofile')} style={s.profileBtn}>
+              <Image source={profileIcon1} style={s.profileImg} />
+            </TouchableOpacity>
+          </SafeAreaView>
 
-
-
-          {/* <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
-            <TouchableOpacity onPress={() => router.push('/updateduserprofile')}>
-              <Image
-              source={profileIcon}
-              style={{ width: 30, height: 30 }}
-              />
-              </TouchableOpacity>
-           </View> */}
-
-
-          {/* <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
-            <TouchableOpacity onPress={() => router.push('/updateduserprofile')}>
-              <Image
-              source={profileIcon}
-              style={{ width: 30, height: 30 }}
-              />
-              </TouchableOpacity>
-           </View> */}
-
-              <Card style={styles.card}>
-                <Card.Content>
-                  <View style={styles.cardHeader}>
-                    <Text variant="titleLarge" style={styles.cardTitle}>Today's Habits</Text>
-                    <View style={styles.progressCircle}>
-                      <Text variant="bodyMedium" style={styles.progressText}>
-                        {Object.values(completed).filter(value => value === true).length}/{tasks.length}
-                      </Text>
-                    </View>
-                  </View>
-
-
-                  {tasks.length === 0 ? ( //Screen when no tasks are present
-                    <View style={styles.emptyState}>
-                      <Text variant="bodyMedium" style={styles.emptyText}>No habits yet</Text>
-                      <Text variant="bodySmall" style={styles.emptySubtext}>Start building your routine</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.habitList}>
-                      {tasks.map((task) => (
-                        <Card key={task.id} style={[
-                          styles.habitItem,
-                          completed[task.name] && styles.habitItemCompleted
-                        ]}>
-                          
-                              <View style={styles.habitContent}>
-                                <Text 
-                                  variant="bodyLarge" 
-                                  style={[
-                                    styles.habitText,
-                                    completed[task.name] && styles.habitTextCompleted //habitText style when completed
-                                  ]}
-                                >
-                                  {task.name}
-                                </Text>
-                                <IconButton
-                            icon="trash-can"
-                            iconColor = 'gray'
-                            size={20}
-                            onPress={() => 
-                              Alert.alert(
-                                'Delete Habit',
-                                'Are you sure you want to remove this habit permanently?',
-                                [
-                                  { text: 'Cancel', style: 'cancel' },
-                                  { 
-                                    text: 'Delete', 
-                                    style: 'destructive',
-                                    onPress: () => handleDelete(task.name)
-                                  }
-                                ]
-                              )
-                            }
-                            style={styles.deleteButton}
-                          />
-                                <Switch
-                                  value={completed[task.name]}           // boolean true/false
-                                  onValueChange={() => toggleTask(task.name)}
-                                  color="#10B981"                       // switch color when ON
-                                />
-                                
-                              </View>
-                          
-                        </Card>
-                      ))}
-                    </View>
-                  )}
-
-                  {adding ? (
-                    <View style={styles.addSection}>
-                      <TextInput
-                        mode="outlined"
-                        placeholder="What habit are you building?"
-                        style={styles.input}
-                        value={newTask}
-                        onChangeText={setNewTask}
-                        autoFocus
-                        returnKeyType="done"
-                        onSubmitEditing={handleAddTask}
-                        outlineColor='#CBD5E1'
-                        activeOutlineColor='#3B82F6'
-                      />
-                      <View style={styles.buttonGroup}>
-                        <Button 
-                          mode="outlined"
-                          style={styles.secondaryButton}
-                          labelStyle={{ color: 'black' }}
-                          onPress={() => setAdding(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          mode="contained"
-                          style={styles.primaryButton} //Add button -> change to green
-                          onPress={handleAddTask}
-                          disabled={!newTask.trim()}
-                        >
-                          Add Habit
-                        </Button>
-                      </View>
-                    </View>
-                  ) : (
-                    <Button 
-                      mode="contained"
-                      icon="plus"
-                      style={styles.addButton}
-                      onPress={() => setAdding(true)}
-                    >
-                      New Habit
-                    </Button>
-                  )}
-                </Card.Content>
-              </Card>
-
-              <View style={styles.signOutContainer}>
-                <Button 
-                  mode="text"
-                  onPress={handleLogout}
-                  icon="logout"
-                  textColor={theme.colors.error}
-                  style={styles.signOutButton}
-                >
-                  Sign Out
-                </Button>
+          {/* Progress inside header */}
+          <View style={s.progressRow}>
+            <View style={s.progressRing}>
+              <Text style={s.progressPct}>{pct}%</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 16 }}>
+              <Text style={s.progressLabel}>{doneCount}/{totalCount} habits done today</Text>
+              <View style={s.progressTrack}>
+                <View style={[s.progressFill, { width: `${pct}%` }]} />
               </View>
-            </ScrollView>
-            {/* <Button  // Uncomment to test notification 
-                  mode="contained" 
-                  onPress={triggerTestNotification}
-                  style={{ marginTop: 20 }}
-                >
-                  Test Notification Now
-                </Button> */}
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-    );
-  };
+              {pct === 100 && totalCount > 0 && (
+                <Text style={s.allDone}>All done! Great work! 🎉</Text>
+              )}
+            </View>
+          </View>
+        </LinearGradient>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+        >
+          <View style={s.body}>
+
+            {/* Quote */}
+            {quote && (
+              <View style={s.quoteCard}>
+                <Text style={s.quoteMark}>"</Text>
+                <Text style={s.quoteText}>{quote.q}</Text>
+                <Text style={s.quoteAuthor}>— {quote.a}</Text>
+              </View>
+            )}
+
+            {/* Habits */}
+            <View style={s.sectionHeader}>
+              <Text style={s.sectionTitle}>Today's Habits</Text>
+              {!adding && (
+                <TouchableOpacity style={s.addPill} onPress={() => setAdding(true)}>
+                  <Text style={s.addPillText}>+ New</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {tasks.length === 0 ? (
+              <View style={s.empty}>
+                <Image source={Logo} style={s.emptyImg} />
+                <Text style={s.emptyTitle}>No habits yet</Text>
+                <Text style={s.emptySub}>Start your journey — add your first habit!</Text>
+                <TouchableOpacity style={s.emptyBtn} onPress={() => setAdding(true)}>
+                  <Text style={s.emptyBtnText}>+ Add First Habit</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              tasks.map((task, idx) => {
+                const color = HABIT_COLORS[idx % HABIT_COLORS.length];
+                const done = completed[task.name];
+                return (
+                  <View key={task.id} style={s.habitCard}>
+                    <View style={[s.habitDot, { backgroundColor: done ? '#10B981' : color, marginLeft: 0 }]} />
+                    <View style={s.habitMain}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.habitName, done && { color: '#10B981' }]}>
+                          {task.name}
+                        </Text>
+                        {task.streak > 0 && (
+                          <View style={s.streakRow}>
+                            <Text style={s.streakText}>🔥 {task.streak} day{task.streak > 1 ? 's' : ''}</Text>
+                          </View>
+                        )}
+                      </View>
+                      <IconButton
+                        icon="trash-can-outline"
+                        iconColor="#CBD5E1"
+                        size={18}
+                        onPress={() =>
+                          Alert.alert('Delete Habit', 'Remove this habit permanently?', [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Delete', style: 'destructive', onPress: () => handleDelete(task.name) },
+                          ])
+                        }
+                        style={{ margin: 0 }}
+                      />
+                      <TouchableOpacity
+                        onPress={() => toggleTask(task.name)}
+                        style={[s.checkBtn, done && s.checkBtnDone]}
+                      >
+                        {done && <Text style={s.checkMark}>✓</Text>}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+
+            {/* Add Input */}
+            {adding && (
+              <View style={s.addSection}>
+                <TextInput
+                  mode="outlined"
+                  placeholder="e.g. Drink 8 glasses of water"
+                  style={s.input}
+                  value={newTask}
+                  onChangeText={setNewTask}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleAddTask}
+                  outlineColor="#CBD5E1"
+                  activeOutlineColor="#6366F1"
+                  outlineStyle={{ borderRadius: 12 }}
+                />
+                <View style={s.btnRow}>
+                  <TouchableOpacity style={s.cancelBtn} onPress={() => { setAdding(false); setNewTask(''); }}>
+                    <Text style={s.cancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.confirmBtn, !newTask.trim() && { opacity: 0.4 }]}
+                    onPress={handleAddTask}
+                    disabled={!newTask.trim()}
+                  >
+                    <LinearGradient colors={['#6366F1', '#8B5CF6']} style={s.confirmGrad}>
+                      <Text style={s.confirmText}>Add Habit</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Sign Out */}
+            <TouchableOpacity style={s.signOut} onPress={handleLogout}>
+              <Text style={s.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </ScrollView>
+    </View>
+  );
+};
 
 export default Home;
 
+async function scheduleNotificationsOnce() {
+  const hasScheduled = await AsyncStorage.getItem('notificationsScheduled');
+  if (hasScheduled) return;
+  if (!Device.isDevice) return;
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== 'granted') return;
+  await Notifications.cancelAllScheduledNotificationsAsync();
+  await Notifications.scheduleNotificationAsync({
+    content: { title: '☀️ Good morning!', body: 'Time to complete your habits!', sound: true },
+    trigger: { hour: 9, minute: 0, repeats: true },
+  });
+  await Notifications.scheduleNotificationAsync({
+    content: { title: '🌙 Good night!', body: 'Did you log your progress today?', sound: true },
+    trigger: { hour: 21, minute: 0, repeats: true },
+  });
+  await AsyncStorage.setItem('notificationsScheduled', 'true');
+}
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#0F172A' },
+  scroll: { paddingBottom: 40 },
+
+  headerGrad: { paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+  headerInner: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8 },
+  greeting: { fontSize: 26, fontWeight: '800', color: 'white' },
+  dateText: { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  profileBtn: {
+    width: 46, height: 46, borderRadius: 23,
+    backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
   },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 5,
-    alignSelf: 'center',
-    backgroundColor: 'transparent',
+  profileImg: { width: 30, height: 30, borderRadius: 15 },
+
+  progressRow: {
+    flexDirection: 'row', alignItems: 'center',
+    marginTop: 20, paddingHorizontal: 20,
   },
-  quoteContainer: {
-    marginBottom: 24,
-    paddingHorizontal: 20,
+  progressRing: {
+    width: 60, height: 60, borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 3, borderColor: '#FFD700',
+    justifyContent: 'center', alignItems: 'center',
   },
-  quoteText: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    color: '#4B5563', // cool gray
-    marginBottom: 6,
+  progressPct: { fontSize: 16, fontWeight: '800', color: '#FFD700' },
+  progressLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '500' },
+  progressTrack: {
+    height: 6, backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 3, marginTop: 8, overflow: 'hidden',
   },
-  quoteAuthor: {
-    fontSize: 12,
-    textAlign: 'center',
-    fontWeight: '600',
-    color: '#6B7280',
+  progressFill: { height: '100%', backgroundColor: '#FFD700', borderRadius: 3 },
+  allDone: { color: '#FFD700', fontSize: 12, fontWeight: '600', marginTop: 6 },
+
+  body: { paddingHorizontal: 20, paddingTop: 20 },
+
+  quoteCard: {
+    backgroundColor: '#1E293B', borderRadius: 16, padding: 20, marginBottom: 24,
+    borderLeftWidth: 4, borderLeftColor: '#818CF8',
+    shadowColor: '#6366F1', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 4 }, shadowRadius: 16,
+    elevation: 4,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 8,
-    marginBottom: 24,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
+  quoteMark: { fontSize: 40, color: '#818CF8', fontWeight: '800', lineHeight: 40, marginBottom: -8 },
+  quoteText: { fontSize: 15, color: '#CBD5E1', fontStyle: 'italic', lineHeight: 23 },
+  quoteAuthor: { fontSize: 12, color: '#64748B', marginTop: 10, fontWeight: '600' },
+
+  sectionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 14,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 8,
-  },
-  cardTitle: {
-    color: '#1E293B',
-    fontWeight: 'bold',
-  },
-  progressCircle: {
-    width: 40,
-    height: 40,
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: '#E2E8F0' },
+  addPill: {
+    backgroundColor: '#6366F1', paddingHorizontal: 16, paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  progressText: {
-    color: '#3B82F6',
-    fontWeight: 'bold',
+  addPillText: { color: 'white', fontSize: 13, fontWeight: '700' },
+
+  empty: {
+    alignItems: 'center', paddingVertical: 48,
+    backgroundColor: '#1E293B', borderRadius: 20, marginBottom: 20,
+    borderWidth: 1, borderColor: 'rgba(99,102,241,0.15)',
   },
-  emptyState: {
-    paddingVertical: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+  emptyImg: { width: 80, height: 80, marginBottom: 16, opacity: 0.5 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#CBD5E1' },
+  emptySub: { fontSize: 13, color: '#64748B', marginTop: 4, textAlign: 'center' },
+  emptyBtn: {
+    marginTop: 20, backgroundColor: '#6366F1',
+    paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24,
   },
-  emptyText: {
-    color: '#64748B',
-    marginBottom: 4,
+  emptyBtnText: { color: 'white', fontWeight: '700', fontSize: 14 },
+
+  habitCard: {
+    backgroundColor: '#1E293B', borderRadius: 16, marginBottom: 10,
+    flexDirection: 'row', alignItems: 'center', overflow: 'hidden',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#000', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 2 }, shadowRadius: 8,
+    elevation: 3,
   },
-  emptySubtext: {
-    color: '#94A3B8',
+  habitDot: {
+    width: 4, height: '100%', position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 0,
   },
-  habitList: {
-    marginBottom: 8,
+  habitMain: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 16, paddingRight: 14, paddingLeft: 20,
   },
-  habitItem: {
-    marginVertical: 4,
-    padding: 0,
-    backgroundColor: '#F8FAFC',
+  habitName: { fontSize: 16, fontWeight: '600', color: '#E2E8F0' },
+  streakRow: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
+  streakText: { fontSize: 12, color: '#FBBF24', fontWeight: '500' },
+
+  checkBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    borderWidth: 2.5, borderColor: '#475569',
+    justifyContent: 'center', alignItems: 'center',
   },
-  habitItemCompleted: {
-    backgroundColor: '#F0FDF4',
+  checkBtnDone: {
+    backgroundColor: '#10B981', borderColor: '#10B981',
   },
-  habitContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
+  checkMark: { color: 'white', fontSize: 14, fontWeight: '800' },
+
+  addSection: { marginTop: 4, marginBottom: 16 },
+  input: { backgroundColor: '#1E293B', marginBottom: 12, color: '#E2E8F0' },
+  btnRow: { flexDirection: 'row', gap: 10 },
+  cancelBtn: {
+    flex: 1, paddingVertical: 14, borderRadius: 14,
+    backgroundColor: 'rgba(239,68,68,0.15)', alignItems: 'center',
   },
-  habitText: {
-    flex: 1,
-    color: '#1E293B',
-    marginLeft: 12,
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  habitTextCompleted: {
-    color: '#10B981',
-    
-  },
-  deleteButton: {
-    margin: 0,
-  },
-  addSection: {
-    marginTop: 16,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
-  },
-  buttonGroup: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  primaryButton: {
-    flex: 1,
-    backgroundColor: '#3B82F6',
-  },
-  secondaryButton: {
-    flex: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FCA5A5',
-  },
-  addButton: {
-    marginTop: 8,
-    backgroundColor: '#3B82F6',
-  },
-  signOutContainer: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  signOutButton: {
-    width: '100%',
-  },
+  cancelText: { color: '#F87171', fontWeight: '700', fontSize: 14 },
+  confirmBtn: { flex: 1, borderRadius: 14, overflow: 'hidden' },
+  confirmGrad: { paddingVertical: 14, alignItems: 'center' },
+  confirmText: { color: 'white', fontWeight: '700', fontSize: 14 },
+
+  signOut: { alignItems: 'center', marginTop: 28, paddingVertical: 14 },
+  signOutText: { color: '#475569', fontSize: 13, fontWeight: '500' },
 });
