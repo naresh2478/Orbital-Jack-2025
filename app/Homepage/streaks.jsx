@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { getTasks } from '../../utils/streakstoragedb';
+import { getTasks } from '../../utils/habits';
 import { useFocusEffect } from 'expo-router';
 
 const TOTAL_DAYS = 21;

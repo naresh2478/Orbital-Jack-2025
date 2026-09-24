@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
   Alert, View, Text, ScrollView, TouchableOpacity,
-  Platform, Image, KeyboardAvoidingView, TextInput as RNTextInput,
+  Platform, Image, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { TextInput } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../../utils/firebase';
-import * as taskAPI from '../../utils/streakstoragedb';
+import { getTasks, addTask, deleteTaskById, toggleTaskById, renameTaskById } from '../../utils/habits';
+import { setElevation } from '../../utils/elevation';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import * as Haptics from 'expo-haptics';
+import HabitCard from '../../components/HabitCard';
 import profileIcon1 from '../../assets/profileicon-nobg.png';
 import Logo from '../../assets/ElevateYouLogo.png';
 
@@ -25,8 +26,6 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
-
-const HABIT_COLORS = ['#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#06B6D4', '#EF4444', '#14B8A6'];
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -41,9 +40,18 @@ const Home = () => {
   const [adding, setAdding] = useState(false);
   const [newTask, setNewTask] = useState('');
   const [quote, setQuote] = useState(null);
-  const [editingTask, setEditingTask] = useState(null);
+  const [editingTaskId, setEditingTaskId] = useState(null);
   const [editName, setEditName] = useState('');
   const router = useRouter();
+
+  const refreshTasks = async () => {
+    const loaded = await getTasks();
+    setTasks(loaded);
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const map = {};
+    loaded.forEach(t => { map[t.id] = t.lastCompleted === today; });
+    setCompleted(map);
+  };
 
   useEffect(() => {
     fetch('https://zenquotes.io/api/random')
@@ -55,74 +63,54 @@ const Home = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user?.uid) {
-        loadTasks(user.uid);
-        try { await taskAPI.setElevation(user.uid); } catch (e) {}
+        refreshTasks();
+        try { await setElevation(user.uid); } catch (e) {}
         try { await scheduleNotifications(); } catch (e) {}
       }
     });
     return () => unsubscribe();
   }, []);
 
-  const loadTasks = async () => {
-    const loadedTasks = await taskAPI.getTasks();
-    setTasks(loadedTasks);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const map = {};
-    loadedTasks.forEach(t => { map[t.name] = t.lastCompleted === today; });
-    setCompleted(map);
-  };
-
-  const toggleTask = async (taskName) => {
+  const handleToggle = async (taskId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await taskAPI.toggleTaskCompletion(taskName);
-    const updatedTasks = await taskAPI.getTasks();
-    setTasks(updatedTasks);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const map = {};
-    updatedTasks.forEach(t => { map[t.name] = t.lastCompleted === today; });
-    setCompleted(map);
+    await toggleTaskById(taskId);
+    await refreshTasks();
     const uid = auth.currentUser?.uid;
-    if (uid) try { await taskAPI.setElevation(uid); } catch (e) {}
+    if (uid) try { await setElevation(uid); } catch (e) {}
   };
 
-  const handleDelete = async (taskName) => {
+  const handleDelete = async (taskId) => {
+    await deleteTaskById(taskId);
     const uid = auth.currentUser?.uid;
-    if (!uid) return;
-    await taskAPI.deleteTask(taskName, uid);
-    try { await taskAPI.setElevation(uid); } catch (e) {}
-    setTasks(prev => prev.filter(t => t.name !== taskName));
-    setCompleted(prev => { const c = { ...prev }; delete c[taskName]; return c; });
+    if (uid) try { await setElevation(uid); } catch (e) {}
+    await refreshTasks();
   };
 
   const handleAddTask = async () => {
     if (!newTask.trim() || tasks.find(t => t.name === newTask)) return;
-    const uid = auth.currentUser?.uid;
-    if (!uid) return;
-    await taskAPI.addTask(newTask, uid);
-    const updatedTasks = await taskAPI.getTasks(uid);
-    setTasks(updatedTasks);
-    setCompleted(prev => ({ ...prev, [newTask]: false }));
+    await addTask(newTask);
+    await refreshTasks();
     setNewTask('');
     setAdding(false);
   };
 
   const handleRename = async () => {
-    if (!editName.trim() || editName === editingTask) {
-      setEditingTask(null);
+    if (!editName.trim() || !editingTaskId) {
+      setEditingTaskId(null);
+      return;
+    }
+    const currentTask = tasks.find(t => t.id === editingTaskId);
+    if (currentTask && editName === currentTask.name) {
+      setEditingTaskId(null);
       return;
     }
     if (tasks.find(t => t.name === editName)) {
       Alert.alert('Duplicate', 'A habit with that name already exists.');
       return;
     }
-    await taskAPI.renameTask(editingTask, editName);
-    const updatedTasks = await taskAPI.getTasks();
-    setTasks(updatedTasks);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const map = {};
-    updatedTasks.forEach(t => { map[t.name] = t.lastCompleted === today; });
-    setCompleted(map);
-    setEditingTask(null);
+    await renameTaskById(editingTaskId, editName);
+    await refreshTasks();
+    setEditingTaskId(null);
   };
 
   const handleLogout = async () => {
@@ -197,7 +185,7 @@ const Home = () => {
 
                 <View className="flex-1 items-center justify-center">
                   <Text className="text-2xl font-extrabold text-orange-400">
-                    🔥 {bestStreak}
+                    {bestStreak}
                   </Text>
                   <Text className="text-[10px] text-white/40 mt-2 font-bold uppercase tracking-widest">
                     Best
@@ -205,7 +193,6 @@ const Home = () => {
                 </View>
               </View>
 
-              {/* Progress bar */}
               <View className="h-1 bg-white/5">
                 <View
                   className="h-full bg-amber-400 rounded-full"
@@ -216,7 +203,7 @@ const Home = () => {
 
             {pct === 100 && totalCount > 0 && (
               <Text className="text-amber-400 text-xs font-semibold text-center mt-3">
-                All done! Great work! 🎉
+                All done! Great work!
               </Text>
             )}
           </SafeAreaView>
@@ -283,74 +270,21 @@ const Home = () => {
                 </TouchableOpacity>
               </View>
             ) : (
-              tasks.map((task, idx) => {
-                const color = HABIT_COLORS[idx % HABIT_COLORS.length];
-                const done = completed[task.name];
-                return (
-                  <View
-                    key={task.id}
-                    className="bg-[#141D2B] rounded-2xl mb-3 flex-row overflow-hidden border border-white/[0.04]"
-                  >
-                    <View className="w-1 rounded-l-2xl" style={{ backgroundColor: done ? '#10B981' : color }} />
-                    <View className="flex-1 flex-row items-center py-4 pr-3 pl-4">
-                      <View className="flex-1">
-                        {editingTask === task.name ? (
-                          <RNTextInput
-                            className="text-base font-semibold text-slate-100 border-b border-violet-500 pb-1"
-                            value={editName}
-                            onChangeText={setEditName}
-                            onSubmitEditing={handleRename}
-                            onBlur={handleRename}
-                            autoFocus
-                            returnKeyType="done"
-                            style={{ color: '#F1F5F9', padding: 0 }}
-                          />
-                        ) : (
-                          <Text className={`text-base font-semibold ${done ? 'text-emerald-400' : 'text-slate-100'}`}>
-                            {task.name}
-                          </Text>
-                        )}
-                        {task.streak > 0 && (
-                          <View className="flex-row items-center mt-1">
-                            <Text className="text-xs text-amber-400 font-medium">
-                              🔥 {task.streak} day{task.streak > 1 ? 's' : ''}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => { setEditingTask(task.name); setEditName(task.name); }}
-                        className="p-2"
-                      >
-                        <MaterialCommunityIcons name="pencil-outline" size={16} color="#475569" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() =>
-                          Alert.alert('Delete Habit', 'Remove this habit permanently?', [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Delete', style: 'destructive', onPress: () => handleDelete(task.name) },
-                          ])
-                        }
-                        className="p-2 mr-1"
-                      >
-                        <MaterialCommunityIcons name="trash-can-outline" size={16} color="#475569" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => toggleTask(task.name)}
-                        className={`w-7 h-7 rounded-full items-center justify-center ${
-                          done ? 'bg-emerald-500' : ''
-                        }`}
-                        style={{
-                          borderWidth: 2.5,
-                          borderColor: done ? '#10B981' : '#475569',
-                        }}
-                      >
-                        {done && <Text className="text-white text-sm font-extrabold">✓</Text>}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              })
+              tasks.map((task, idx) => (
+                <HabitCard
+                  key={task.id}
+                  task={task}
+                  index={idx}
+                  done={completed[task.id]}
+                  editing={editingTaskId === task.id}
+                  editName={editName}
+                  onEditNameChange={setEditName}
+                  onStartEdit={() => { setEditingTaskId(task.id); setEditName(task.name); }}
+                  onSubmitEdit={handleRename}
+                  onDelete={() => handleDelete(task.id)}
+                  onToggle={() => handleToggle(task.id)}
+                />
+              ))
             )}
 
             {/* Add Habit */}
@@ -416,11 +350,11 @@ async function scheduleNotifications() {
   if (existing.length >= 2) return;
   await Notifications.cancelAllScheduledNotificationsAsync();
   await Notifications.scheduleNotificationAsync({
-    content: { title: '☀️ Good morning!', body: 'Time to complete your habits!', sound: true },
+    content: { title: 'Good morning!', body: 'Time to complete your habits!', sound: true },
     trigger: { hour: 9, minute: 0, repeats: true },
   });
   await Notifications.scheduleNotificationAsync({
-    content: { title: '🌙 Good night!', body: 'Did you log your progress today?', sound: true },
+    content: { title: 'Good night!', body: 'Did you log your progress today?', sound: true },
     trigger: { hour: 21, minute: 0, repeats: true },
   });
 }
