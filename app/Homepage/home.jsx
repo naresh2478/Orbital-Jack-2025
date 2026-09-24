@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Alert, View, Text, ScrollView, TouchableOpacity,
-  Platform, Image, KeyboardAvoidingView,
+  Platform, Image, KeyboardAvoidingView, TextInput as RNTextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -41,6 +41,8 @@ const Home = () => {
   const [adding, setAdding] = useState(false);
   const [newTask, setNewTask] = useState('');
   const [quote, setQuote] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
+  const [editName, setEditName] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -102,6 +104,25 @@ const Home = () => {
     setCompleted(prev => ({ ...prev, [newTask]: false }));
     setNewTask('');
     setAdding(false);
+  };
+
+  const handleRename = async () => {
+    if (!editName.trim() || editName === editingTask) {
+      setEditingTask(null);
+      return;
+    }
+    if (tasks.find(t => t.name === editName)) {
+      Alert.alert('Duplicate', 'A habit with that name already exists.');
+      return;
+    }
+    await taskAPI.renameTask(editingTask, editName);
+    const updatedTasks = await taskAPI.getTasks();
+    setTasks(updatedTasks);
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const map = {};
+    updatedTasks.forEach(t => { map[t.name] = t.lastCompleted === today; });
+    setCompleted(map);
+    setEditingTask(null);
   };
 
   const handleLogout = async () => {
@@ -273,9 +294,22 @@ const Home = () => {
                     <View className="w-1 rounded-l-2xl" style={{ backgroundColor: done ? '#10B981' : color }} />
                     <View className="flex-1 flex-row items-center py-4 pr-3 pl-4">
                       <View className="flex-1">
-                        <Text className={`text-base font-semibold ${done ? 'text-emerald-400' : 'text-slate-100'}`}>
-                          {task.name}
-                        </Text>
+                        {editingTask === task.name ? (
+                          <RNTextInput
+                            className="text-base font-semibold text-slate-100 border-b border-violet-500 pb-1"
+                            value={editName}
+                            onChangeText={setEditName}
+                            onSubmitEditing={handleRename}
+                            onBlur={handleRename}
+                            autoFocus
+                            returnKeyType="done"
+                            style={{ color: '#F1F5F9', padding: 0 }}
+                          />
+                        ) : (
+                          <Text className={`text-base font-semibold ${done ? 'text-emerald-400' : 'text-slate-100'}`}>
+                            {task.name}
+                          </Text>
+                        )}
                         {task.streak > 0 && (
                           <View className="flex-row items-center mt-1">
                             <Text className="text-xs text-amber-400 font-medium">
@@ -285,15 +319,21 @@ const Home = () => {
                         )}
                       </View>
                       <TouchableOpacity
+                        onPress={() => { setEditingTask(task.name); setEditName(task.name); }}
+                        className="p-2"
+                      >
+                        <MaterialCommunityIcons name="pencil-outline" size={16} color="#475569" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
                         onPress={() =>
                           Alert.alert('Delete Habit', 'Remove this habit permanently?', [
                             { text: 'Cancel', style: 'cancel' },
                             { text: 'Delete', style: 'destructive', onPress: () => handleDelete(task.name) },
                           ])
                         }
-                        className="p-2 mr-2"
+                        className="p-2 mr-1"
                       >
-                        <MaterialCommunityIcons name="trash-can-outline" size={18} color="#475569" />
+                        <MaterialCommunityIcons name="trash-can-outline" size={16} color="#475569" />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => toggleTask(task.name)}

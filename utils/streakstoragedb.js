@@ -86,6 +86,20 @@ export const addTask = async (taskName) => {
   console.log("✅ Task added:", taskName);
 };
 
+// ✅ Rename a task
+export const renameTask = async (oldName, newName) => {
+  const uid = getUid();
+  if (!uid) return;
+
+  const tasks = await getTasks();
+  const task = tasks.find(t => t.name === oldName);
+  if (!task) return;
+  if (tasks.find(t => t.name === newName)) return;
+
+  const taskDoc = doc(db, 'users', uid, 'habits', task.id);
+  await updateDoc(taskDoc, { name: newName });
+};
+
 // ✅ Delete a task
 export const deleteTask = async (taskName) => {
   const uid = getUid();
